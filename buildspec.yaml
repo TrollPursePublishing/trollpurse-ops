@@ -1,0 +1,18 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.7
+    commands:
+      - pip install --upgrade pip
+      - pip install --upgrade awscli
+      - apt-get update
+      - apt-get -y install ruby-full
+      - apt-get -y install jq
+      - gem install cfn-nag
+  build:
+    commands:
+      - find ./templates -name '*.yml' -print0 -or -name '*.yaml' -print0 | xargs -0 -I {file} sh -c 'echo Validating {file}; aws cloudformation validate-template --template-body file://{file}'
+      - cfn_nag_scan --input-path ./templates/
+      - aws s3 sync ./templates $TEMPLATE_BUCKET

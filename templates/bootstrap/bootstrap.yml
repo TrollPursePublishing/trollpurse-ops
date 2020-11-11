@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Bootstrap template to configure automation of new templates from Troll Purse.
+Resources:
+  BootstrapCodebuildProject:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      Name: TrollOpsCFBuild
+      Description: "Build project for Troll Purse Troll Ops."
+      ServiceRole: !GetAtt BootstrapRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: "aws/codebuild/standard:2.0"
+        EnvironmentVariables:
+          - Name: TEMPLATE_BUCKET
+            Value: !Sub 's3://${TemplateS3BucketName}'
+      Source:
+        Auth:
+          Type: OAUTH
+        Location: !Sub "${GithubHTTPSClone}"
+        Type: GITHUB
+      SourceVersion: !Sub "${SourceVersion}"
+      TimeoutInMinutes: 15
+      Triggers:
+        Webhook: true
+        FilterGroups:
+          -
+            - Type: EVENT
+              Pattern: PUSH
+            - Type: HEAD_REF
+              Pattern: ^refs/heads/master$
+            - Type: FILE_PATH
+              Pattern: readme.md
+              ExcludeMatchedPattern: true
+            - Type: FILE_PATH
+              Pattern: README.md
+              ExcludeMatchedPattern: true
+            - Type: FILE_PATH
+              Pattern: README.MD
+              ExcludeMatchedPattern: true
+  BootstrapRole:
+    Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: "IAM role should not allow * action on its permissions policy. We acknowledge that we want to allow all the actions for a given group."
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: "WriteBuildLogs"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - 'logs:*'
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/Template-Build:*:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/Template-Build:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/Template-Build"
+        - PolicyName: "ManageTemplateObjects"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:*Object"
+                  - "s3:*Objects"
+                  - "s3:List*"
+                  - "s3:Get*"
+                  - "s3:AbortMultipartUpload"
+                Resource:
+                  - !GetAtt TemplateBucket.Arn
+                  - !Join
+                    - ''
+                    - - !GetAtt TemplateBucket.Arn
+                      - '/*'
+        - PolicyName: "AllowTemplateValidation"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "cloudformation:ValidateTemplate"
+                Resource:
+                  - "*"
+  TemplateBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Sub "${TemplateS3BucketName}"
+Parameters:
+  TemplateS3BucketName:
+    Type: String
+    Description: The name of the bucket that the templates should be in
+  GithubHTTPSClone:
+    Type: String
+    Description: The https clone route to the Github repository
+  SourceVersion:
+    Type: String
+    Description: >-
+      The commit ID, pull request ID, branch name, or tag name that corresponds to the version of
+      the source code you want to build. If a pull request ID is specified, it must use the format
+      pr/pull-request-ID (for example pr/25). If a branch name is specified, the branch's HEAD
+      commit ID is used. If not specified, the default branch's HEAD commit ID is used.
+    Default: main
