@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Create a Pipeline to build and deploy a website from Github.
+  Create a Pipeline to build and deploy a game client from Github.
 Parameters:
   BranchName:
     Description: GitHub branch name for release builds
@@ -15,15 +15,6 @@ Parameters:
     Type: String
     Description: The owner of the repository. For an organization, it is the name of the organization
     
-  DockerHubUsername:
-    Type: String
-    Description: The username for your Docker Hub Account, stored in Secrets Manager. Used for image.
-    
-  DockerHubPassword:
-    Type: String
-    NoEcho: true
-    Description: The password for your Docker Hub Account, stored securely in Secrets Manager.
-
   GitHubSecret:
     Type: String
     NoEcho: true
@@ -32,162 +23,24 @@ Parameters:
   NotificationEmailDistribution:
     Type: String
     Description: Email distribution to notify when builds have failed or succeeded
-    
-  ProjectEnvironmentType:
-    Type: String
-    Description: The type for the project configuration
-    AllowedValues:
-      - ARM_CONTAINER
-      - LINUX_CONTAINER
-      - LINUX_GPU_CONTAINER
-      - WINDOWS_CONTAINER
-      - WINDOWS_SERVER_2019_CONTAINER
-    Default: WINDOWS_CONTAINER
-      
-  ProjectEnvironmentComputeType:
-    Type: String
-    Description: The compute size type for the project
-    AllowedValues:
-      - BUILD_GENERAL1_SMALL
-      - BUILD_GENERAL1_MEDIUM
-      - BUILD_GENERAL1_LARGE
-    Default: BUILD_GENERAL1_MEDIUM
-      
-  ProjectEnvironmentImageName:
-    Type: String
-    Description: The docker image name only for the project environment, will be used with your DockerHubUsername
-    Default: "ue4-minimal:4.25.4"
-
-Outputs:
-   ClientDownloadBucket:
-    Description: The name of the bucket new client applications will be deployed to.
-    Value: !Ref ClientDownloadableBucket
-    Export:
-      Name: !Sub '${AWS::StackName}-Client'
-
-Resources:
-  ClientDownloadableBucket:
-    Type: 'AWS::S3::Bucket'
-    DeletionPolicy: 'Retain'
-    UpdateReplacePolicy: 'Retain'
-  
-  CodePipelineArtifactStoreBucket:
-    Type: 'AWS::S3::Bucket'
-    DeletionPolicy: 'Retain'
-    UpdateReplacePolicy: 'Retain'
-
-  CodePipelineArtifactStoreBucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
-    Properties:
-      Bucket: !Ref CodePipelineArtifactStoreBucket
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Sid: DenyUnEncryptedObjectUploads
-            Effect: Deny
-            Principal: '*'
-            Action: 's3:PutObject'
-            Resource: !Join
-              - ''
-              - - !GetAtt CodePipelineArtifactStoreBucket.Arn
-                - /*
-            Condition:
-              StringNotEquals:
-                's3:x-amz-server-side-encryption': 'aws:kms'
-          - Sid: DenyInsecureConnections
-            Effect: Deny
-            Principal: '*'
-            Action: 's3:*'
-            Resource: !Join
-              - ''
-              - - !GetAtt
-                  - CodePipelineArtifactStoreBucket
-                  - Arn
-                - /*
-            Condition:
-              Bool:
-                'aws:SecureTransport': false
-
-  BuildRole:
-    Type: 'AWS::IAM::Role'
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: F3
-            reason: "IAM role should not allow * action on its permissions policy. We acknowledge that we want to allow all the actions for a given group."
-    Properties:
-        AssumeRolePolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-            - Effect: Allow
-              Principal:
-                Service: codebuild.amazonaws.com
-              Action: sts:AssumeRole
-        Path: "/"
-        Policies:
-            - PolicyName: "Logs"
-              PolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                  -
-                    Effect: "Allow"
-                    Action:
-                      - 'logs:*'
-                    Resource:
-                      - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-Build:*:*"
-                      - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-Build:*"
-                      - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-Build"
-            - PolicyName: "ManageArtifacts"
-              PolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                  - Effect: "Allow"
-                    Action:
-                      - "s3:*Object"
-                      - "s3:*Objects"
-                      - "s3:List*"
-                      - "s3:Get*"
-                      - "s3:AbortMultipartUpload"
-                    Resource:
-                      - !GetAtt CodePipelineArtifactStoreBucket.Arn
-                      - !Join
-                        - ''
-                        - - !GetAtt CodePipelineArtifactStoreBucket.Arn
-                          - '/*'
-                      - !GetAtt ClientDownloadableBucket.Arn
-                      - !Join
-                        - ''
-                        - - !GetAtt ClientDownloadableBucket.Arn
-                          - '/*'
-                          
-  DockerSecretPassword:
-    Type: AWS::SecretsManager::Secret
-    Properties: 
-      Description: Secret used for pulling the private ue4 image
-      Name: !Sub ${AWS::StackName}/DockerPassword
-      SecretString: !Sub '{"username":"${DockerHubUsername}","password":"${DockerHubPassword}"}'
 
   BuildProject:
-    Type: 'AWS::CodeBuild::Project'
-    Properties:
-      Name: !Sub '${AWS::StackName}-Build'
-      Description: !Sub 'Build project for ${AWS::StackName}.'
-      ServiceRole: !GetAtt BuildRole.Arn
-      Artifacts:
-        Type: CODEPIPELINE
-      Source:
-        Type: CODEPIPELINE
-      Environment:
-        Type: !Ref ProjectEnvironmentType
-        ComputeType: !Ref ProjectEnvironmentComputeType
-        Image: !Sub "${DockerHubUsername}/${ProjectEnvironmentImageName}"
-        ImagePullCredentialsType: SERVICE_ROLE
-        RegistryCredential:
-          CredentialProvider: SECRETS_MANAGER
-          Credential: 
-      TimeoutInMinutes: 60
-      BadgeEnabled: true
+    Type: String
+    Description: The name of the CodeBuild project.
 
+  CodePipelineRoleArn:
+    Type: String
+    Description: The ARN for the CodePipeline execution role. Requires Read/Write for objects in the Artifact storage bucket, and roles for CodeBuild, CodeDeploy, and Logs
+
+  ClientDownloadBucketName:
+    Type: String
+    Description: The name of the bucket for the final client package
+
+  ArtifactStoreBucketName:
+    Type: String
+    Description: The name of the bucket for artifacts to be read from and written to
+
+Resources:
   PipelineWebhook:
     Type: 'AWS::CodePipeline::Webhook'
     Properties:
@@ -207,7 +60,7 @@ Resources:
     Type: 'AWS::CodePipeline::Pipeline'
     Properties:
       Name: !Sub '${AWS::StackName}Pipeline'
-      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      RoleArn: !Ref CodePipelineRoleArn
       Stages:
         - Name: Source
           Actions:
@@ -252,62 +105,12 @@ Resources:
                 Version: "1"
                 Provider: S3
               Configuration:
-                BucketName: !Ref ClientDownloadableBucket
+                BucketName: !Ref ClientDownloadBucketName
                 Extract: false
               RunOrder: 1
       ArtifactStore:
         Type: S3
-        Location: !Ref CodePipelineArtifactStoreBucket
-
-  CodePipelineServiceRole:
-    Type: 'AWS::IAM::Role'
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: F3
-            reason: "IAM role should not allow * action on its permissions policy. It has code powers, but we should reconfigure this."
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - codepipeline.amazonaws.com
-            Action: 'sts:AssumeRole'
-      Path: /
-      Policies:
-        - PolicyName: CodePipelinePolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'iam:GetRole'
-                  - 'iam:PassRole'
-                Resource:
-                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/*CodePipelineServiceRole*'
-              - Effect: Allow
-                Action:
-                  - 'logs:*'
-                  - 'codedeploy:*'
-                  - 'codebuild:*'
-                  - 'codepipeline:*'
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - 's3:*'
-                Resource:
-                  - !Join
-                    - ''
-                    - - !GetAtt CodePipelineArtifactStoreBucket.Arn
-                      - /*
-                  - !GetAtt CodePipelineArtifactStoreBucket.Arn
-                  - !Join
-                    - ''
-                    - - !GetAtt ClientDownloadableBucket.Arn
-                      - /*
-                  - !GetAtt ClientDownloadableBucket.Arn
+        Location: !Ref ArtifactStoreBucketName
                   
   PipelineFailedEventRule: 
     Type: "AWS::Events::Rule"
@@ -324,7 +127,7 @@ Resources:
           pipeline:
           - !Ref AppPipeline
       State: "ENABLED"
-      Targets: 
+      Targets:
         - 
           Arn: !Ref FailedPipelineSNSTopic
           Id: "FailedPipelineNotificationTopic"
@@ -333,6 +136,7 @@ Resources:
             InputPathsMap:
               pipeline: "$.detail.pipeline"
               region: "$.region"
+
   FailedPipelineSNSTopic:
     Type: AWS::SNS::Topic
     Properties:

@@ -15,38 +15,7 @@ Resources:
         Type: AWS::S3::Bucket
         DeletionPolicy: Retain
         UpdateReplacePolicy: Retain
-    # TODO: Proxy will be able to encrypt and decrypt data of the s3 bucket
-    # StorageBucketBucketPolicy:
-    #   Type: 'AWS::S3::BucketPolicy'
-    #   Properties:
-    #     Bucket: !Ref StorageBucket
-    #     PolicyDocument:
-    #       Version: 2012-10-17
-    #       Statement:
-    #         - Sid: DenyUnEncryptedObjectUploads
-    #           Effect: Deny
-    #           Principal: '*'
-    #           Action: 's3:PutObject'
-    #           Resource: !Join
-    #             - ''
-    #             - - !GetAtt StorageBucket.Arn
-    #               - /*
-    #           Condition:
-    #             StringNotEquals:
-    #               's3:x-amz-server-side-encryption': 'aws:kms'
-    #         - Sid: DenyInsecureConnections
-    #           Effect: Deny
-    #           Principal: '*'
-    #           Action: 's3:*'
-    #           Resource: !Join
-    #             - ''
-    #             - - !GetAtt
-    #                 - StorageBucket
-    #                 - Arn
-    #               - /*
-    #           Condition:
-    #             Bool:
-    #               'aws:SecureTransport': false
+
     RestApi:
         Type: AWS::ApiGateway::RestApi
         Properties:
@@ -79,6 +48,7 @@ Resources:
             Description: Git LFS endpoint
             FailOnWarnings: true
             Name: !Ref AWS::StackName
+
     RestDeployment:
         Type: AWS::ApiGateway::Deployment
         Properties:
