@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Create a Pipeline to build and deploy a game client from Github.
+Parameters:
+  BranchName:
+    Description: GitHub branch name for release builds
+    Type: String
+    Default: main
+
+  GithubRepositoryName:
+    Description: GitHub repository name. For example, my-website
+    Type: String
+
+  GithubOrganization:
+    Type: String
+    Description: The owner of the repository. For an organization, it is the name of the organization
+    
+  GitHubSecret:
+    Type: String
+    NoEcho: true
+    Description: Secret needed for webhook access to pull changes.
+    
+  NotificationEmailDistribution:
+    Type: String
+    Description: Email distribution to notify when builds have failed or succeeded
+
+  BuildProject:
+    Type: String
+    Description: The name of the CodeBuild project.
+
+  CodePipelineRoleArn:
+    Type: String
+    Description: The ARN for the CodePipeline execution role. Requires Read/Write for objects in the Artifact storage bucket, and roles for CodeBuild, CodeDeploy, and Logs
+
+  ClientDownloadBucketName:
+    Type: String
+    Description: The name of the bucket for the final client package
+
+  ArtifactStoreBucketName:
+    Type: String
+    Description: The name of the bucket for artifacts to be read from and written to
+
+Resources:
+  AppPipeline:
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      Name: !Sub '${AWS::StackName}Pipeline'
+      RoleArn: !Ref CodePipelineRoleArn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GameSource
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: "1"
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                Owner: !Ref GithubOrganization
+                Repo: !Ref GithubRepositoryName
+                Branch: !Ref BranchName
+                OAuthToken: !Ref GitHubSecret
+                PollForSourceChanges: false
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: ClientBuild
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: "1"
+                Provider: CodeBuild
+              OutputArtifacts:
+                - Name: ClientBuildOutput
+              InputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                ProjectName: !Ref BuildProject
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - Name: DeployDownloadableClient
+              InputArtifacts:
+                - Name: ClientBuildOutput
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: S3
+              Configuration:
+                BucketName: !Ref ClientDownloadBucketName
+                Extract: false
+              RunOrder: 1
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactStoreBucketName
+  
+  PipelineWebhook:
+    Type: 'AWS::CodePipeline::Webhook'
+    Properties:
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: !Ref GitHubSecret
+      Filters:
+        - JsonPath: $.ref
+          MatchEquals: 'refs/heads/{Branch}'
+      TargetPipeline: !Ref AppPipeline
+      TargetAction: GameSource
+      Name: !Sub '${AWS::StackName}PipelineWebhook'
+      TargetPipelineVersion: !GetAtt AppPipeline.Version
+      RegisterWithThirdParty: true
+
+  PipelineFailedEventRule: 
+    Type: "AWS::Events::Rule"
+    Properties: 
+      Description: "CodePipeline Failed Event Rule"
+      EventPattern: 
+        source:
+        - aws.codepipeline
+        detail-type:
+        - CodePipeline Pipeline Execution State Change
+        detail:
+          state:
+          - FAILED
+          pipeline:
+          - !Ref AppPipeline
+      State: "ENABLED"
+      Targets:
+        - Arn: !Ref FailedPipelineSNSTopic
+          Id: "FailedPipelineNotificationTopic"
+          InputTransformer:
+            InputTemplate: '"The Pipeline <pipeline> has failed. Go to https://console.aws.amazon.com/codepipeline/home?region=<region>#/view/<pipeline>" '
+            InputPathsMap:
+              pipeline: "$.detail.pipeline"
+              region: "$.region"
+
+  FailedPipelineSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Endpoint: !Ref NotificationEmailDistribution
+        Protocol: email

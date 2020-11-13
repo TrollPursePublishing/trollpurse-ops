@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Create a Pipeline to build and deploy a game client from Github.
+Parameters:
+  ProjectEnvironmentType:
+    Type: String
+    Description: The type for the project configuration
+    AllowedValues:
+      - ARM_CONTAINER
+      - LINUX_CONTAINER
+      - LINUX_GPU_CONTAINER
+      - WINDOWS_CONTAINER
+      - WINDOWS_SERVER_2019_CONTAINER
+    Default: WINDOWS_CONTAINER
+      
+  ProjectEnvironmentComputeType:
+    Type: String
+    Description: The compute size type for the project
+    AllowedValues:
+      - BUILD_GENERAL1_SMALL
+      - BUILD_GENERAL1_MEDIUM
+      - BUILD_GENERAL1_LARGE
+    Default: BUILD_GENERAL1_MEDIUM
+      
+  ProjectEnvironmentImageName:
+    Type: String
+    Description: The image to use for the build
+    Default: "aws/codebuild/windows-base:2019-1.0"
+    
+  ImageCredentials:
+    Type: String
+    ConstraintDescription: "Must be either SERVICE_ROLE or CODEBUILD. If using a non-AWS docker image, use SERVICE_ROLE"
+    AllowedValues:
+      - SERVICE_ROLE
+      - CODEBUILD
+    Default: CODEBUILD
+
+  BuildRoleArn:
+    Type: String
+    Description: ARN for the build role. Should enable access to the CodePipeline artifact store, ECR, and logging.
+
+Outputs:
+  ProjectName:
+      Description: The name of the Build Project
+      Value: !Ref BuildProject
+
+Resources:
+  BuildProject:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Sub '${AWS::StackName}-Build'
+      Description: !Sub 'Build project for ${AWS::StackName}.'
+      ServiceRole: !Ref BuildRoleArn
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+      Environment:
+        Type: !Ref ProjectEnvironmentType
+        ComputeType: !Ref ProjectEnvironmentComputeType
+        Image: !Ref ProjectEnvironmentImageName
+        ImagePullCredentialsType: !Ref ImageCredentials
+      TimeoutInMinutes: 60
+      BadgeEnabled: true
