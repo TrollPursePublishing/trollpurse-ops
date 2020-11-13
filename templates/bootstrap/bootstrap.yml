@@ -2,10 +2,71 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   Bootstrap template to configure automation of new templates from Troll Purse.
 Resources:
-  BootstrapCodebuildProject:
+  
+  FatContainerBuilder:
     Type: "AWS::CodeBuild::Project"
     Properties:
-      Name: TrollOpsCFBuild
+      Name: !Sub "${AWS::StackName}-FCB"
+      ServiceRole: !Ref FatContainerBuilderRole
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: "aws/codebuild/standard:2.0"
+        BuildSpec:
+      
+  FatContainerBuilderRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}FcbLogs"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-BS:*:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-BS:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-BS"
+        - PolicyName: !Sub "${AWS::StackName}FcbArt"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:ListBucket"
+                  - "s3:Get*"
+                  - "s3:PutObject"
+                  - "s3:PutObjectAcl"
+                  - "s3:*MultipartUpload*"
+                Resource:
+                  - !GetAtt TemplateArtifactBucket.Arn
+                  - !Join
+                    - ''
+                    - - !GetAtt TemplateArtifactBucket.Arn
+                      - '/*'
+  
+  BootstrapCodeBuildProject:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      Name: !Sub "${AWS::StackName}-BS"
       Description: "Build project for Troll Purse Troll Ops."
       ServiceRole: !GetAtt BootstrapRole.Arn
       Artifacts:
@@ -16,13 +77,13 @@ Resources:
         Image: "aws/codebuild/standard:2.0"
         EnvironmentVariables:
           - Name: TEMPLATE_BUCKET
-            Value: !Sub 's3://${TemplateS3BucketName}'
+            Value: !Sub 's3://${TemplateArtifactBucket}'
       Source:
         Auth:
           Type: OAUTH
-        Location: !Sub "${GithubHTTPSClone}"
+        Location: !Sub "${OpsGithubHTTPSClone}"
         Type: GITHUB
-      SourceVersion: !Sub "${SourceVersion}"
+      SourceVersion: !Sub "${OpsSourceVersion}"
       TimeoutInMinutes: 15
       Triggers:
         Webhook: true
@@ -41,13 +102,9 @@ Resources:
             - Type: FILE_PATH
               Pattern: README.MD
               ExcludeMatchedPattern: true
+
   BootstrapRole:
     Type: "AWS::IAM::Role"
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: F3
-            reason: "IAM role should not allow * action on its permissions policy. We acknowledge that we want to allow all the actions for a given group."
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -60,33 +117,35 @@ Resources:
               - sts:AssumeRole
       Path: "/"
       Policies:
-        - PolicyName: "WriteBuildLogs"
+        - PolicyName: !Sub "${AWS::StackName}BsLogs"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: "Allow"
                 Action:
-                  - 'logs:*'
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
                 Resource:
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/Template-Build:*:*"
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/Template-Build:*"
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/Template-Build"
-        - PolicyName: "ManageTemplateObjects"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-BS:*:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-BS:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-BS"
+        - PolicyName: !Sub "${AWS::StackName}BsArt"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: "Allow"
                 Action:
-                  - "s3:*Object"
-                  - "s3:*Objects"
-                  - "s3:List*"
+                  - "s3:ListBucket"
                   - "s3:Get*"
-                  - "s3:AbortMultipartUpload"
+                  - "s3:PutObject"
+                  - "s3:PutObjectAcl"
+                  - "s3:*MultipartUpload*"
                 Resource:
-                  - !GetAtt TemplateBucket.Arn
+                  - !GetAtt TemplateArtifactBucket.Arn
                   - !Join
                     - ''
-                    - - !GetAtt TemplateBucket.Arn
+                    - - !GetAtt TemplateArtifactBucket.Arn
                       - '/*'
         - PolicyName: "AllowTemplateValidation"
           PolicyDocument:
@@ -97,18 +156,17 @@ Resources:
                   - "cloudformation:ValidateTemplate"
                 Resource:
                   - "*"
-  TemplateBucket:
+  TemplateArtifactBucket:
     Type: "AWS::S3::Bucket"
-    Properties:
-      BucketName: !Sub "${TemplateS3BucketName}"
+    DeletionPolicy: 'Retain'
+    UpdateReplacePolicy: 'Retain'
+      
 Parameters:
-  TemplateS3BucketName:
-    Type: String
-    Description: The name of the bucket that the templates should be in
-  GithubHTTPSClone:
+  OpsGithubHTTPSClone:
     Type: String
     Description: The https clone route to the Github repository
-  SourceVersion:
+    Default: https://github.com/trollpursepublishing/trolpurse-trollops
+  OpsSourceVersion:
     Type: String
     Description: >-
       The commit ID, pull request ID, branch name, or tag name that corresponds to the version of
@@ -116,3 +174,10 @@ Parameters:
       pr/pull-request-ID (for example pr/25). If a branch name is specified, the branch's HEAD
       commit ID is used. If not specified, the default branch's HEAD commit ID is used.
     Default: main
+    
+Outputs:
+  UnrealEngine4MaginLink:
+    Description: Magic link to kick off the UE4 build process and bootstrap a pipeline for your UE4 project.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=${TemplateArtifactBucket.RegionalDomainName}/u4-main.yml&stackName=MyUE4Project"
+    Exports:
+      Name: !Sub '${AWS::StackName}-UE4MagicLink'
