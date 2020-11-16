@@ -20,6 +20,10 @@ Outputs:
     Description: ARN for the Code Pipeline role, enables full access to CodeDeploy, CodeBuild, CodePipeline, and Logs
     Value: !Sub "${CodePipelineServiceRole.Arn}"
 
+  CodeBuildContainerArn:
+    Description: ARN for the Code Pipeline role, enables full access to CodeDeploy, CodeBuild, CodePipeline, and Logs
+    Value: !Sub "${CodeBuildContainerArn.Arn}"
+
 Resources:
   CodePipelineServiceRole:
     Type: 'AWS::IAM::Role'
@@ -32,12 +36,24 @@ Resources:
               Service:
                 - codepipeline.amazonaws.com
             Action: 'sts:AssumeRole'
-      Path: /
+      Path: /ops/
       Policies:
-        - PolicyName: CodePipelinePolicy
+        - PolicyName: !Sub "${AWS::StackName}CodePipelinePolicy"
           PolicyDocument:
             Version: 2012-10-17
             Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:BatchGetImage"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:PutImage"
+                  - "ecr:InitiateLayerUpload"
+                  - "ecr:UploadLayerPart"
+                  - "ecr:CompleteLayerUpload"
+                Resource:
+                  - !Ref CodeBuildImageEcrArn
+                  - !Sub "${CodeBuildImageEcrArn}/*"
               - Effect: Allow
                 Action:
                   - 'iam:GetRole'
@@ -91,9 +107,9 @@ Resources:
           Statement:
           - Effect: Allow
             Principal:
-              Service: codebuild.amazonaws.com
+              Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
-      Path: "/"
+      Path: /ops/
       Policies:
           - PolicyName: !Sub "${AWS::StackName}ECRBuild"
             PolicyDocument:
@@ -104,8 +120,13 @@ Resources:
                     - "ecr:GetDownloadUrlForLayer"
                     - "ecr:BatchGetImage"
                     - "ecr:BatchCheckLayerAvailability"
+                    - "ecr:PutImage"
+                    - "ecr:InitiateLayerUpload"
+                    - "ecr:UploadLayerPart"
+                    - "ecr:CompleteLayerUpload"
                   Resource:
                     - !Ref CodeBuildImageEcrArn
+                    - !Sub "${CodeBuildImageEcrArn}/*"
           - PolicyName: !Sub "${AWS::StackName}ECRBuildLogs"
             PolicyDocument:
               Version: "2012-10-17"
@@ -116,9 +137,7 @@ Resources:
                     - "logs:CreateLogStream"
                     - "logs:PutLogEvents"
                   Resource:
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-ECRBuild:*:*"
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-ECRBuild:*"
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-ECRBuild"
+                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
     
   CodeBuildRoleArn:
     Type: 'AWS::IAM::Role'
@@ -131,7 +150,7 @@ Resources:
             Principal:
               Service: codebuild.amazonaws.com
             Action: sts:AssumeRole
-      Path: "/"
+      Path: /ops/
       Policies:
           - PolicyName: !Sub "${AWS::StackName}ECRRead"
             PolicyDocument:
@@ -154,9 +173,7 @@ Resources:
                     - "logs:CreateLogStream"
                     - "logs:PutLogEvents"
                   Resource:
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-Build:*:*"
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-Build:*"
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-Build"
+                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
           - PolicyName: !Sub "${AWS::StackName}Artifacts"
             PolicyDocument:
               Version: "2012-10-17"

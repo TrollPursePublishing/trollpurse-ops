@@ -2,67 +2,6 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   Bootstrap template to configure automation of new templates from Troll Purse.
 Resources:
-  
-  FatContainerBuilder:
-    Type: "AWS::CodeBuild::Project"
-    Properties:
-      Name: !Sub "${AWS::StackName}-FCB"
-      ServiceRole: !Ref FatContainerBuilderRole
-      Artifacts:
-        Type: CODEPIPELINE
-      Source:
-        Type: CODEPIPELINE
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: "aws/codebuild/standard:2.0"
-        BuildSpec:
-      
-  FatContainerBuilderRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - codebuild.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: "/"
-      Policies:
-        - PolicyName: !Sub "${AWS::StackName}FcbLogs"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                Resource:
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-BS:*:*"
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-BS:*"
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-BS"
-        - PolicyName: !Sub "${AWS::StackName}FcbArt"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "s3:ListBucket"
-                  - "s3:Get*"
-                  - "s3:PutObject"
-                  - "s3:PutObjectAcl"
-                  - "s3:*MultipartUpload*"
-                Resource:
-                  - !GetAtt TemplateArtifactBucket.Arn
-                  - !Join
-                    - ''
-                    - - !GetAtt TemplateArtifactBucket.Arn
-                      - '/*'
-  
   BootstrapCodeBuildProject:
     Type: "AWS::CodeBuild::Project"
     Properties:
@@ -75,9 +14,6 @@ Resources:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: "aws/codebuild/standard:2.0"
-        EnvironmentVariables:
-          - Name: TEMPLATE_BUCKET
-            Value: !Sub 's3://${TemplateArtifactBucket}'
       Source:
         Auth:
           Type: OAUTH
@@ -142,10 +78,10 @@ Resources:
                   - "s3:PutObjectAcl"
                   - "s3:*MultipartUpload*"
                 Resource:
-                  - !GetAtt TemplateArtifactBucket.Arn
+                  - !Ref TemplateArtifactBucketArn
                   - !Join
                     - ''
-                    - - !GetAtt TemplateArtifactBucket.Arn
+                    - - !Ref TemplateArtifactBucketArn
                       - '/*'
         - PolicyName: "AllowTemplateValidation"
           PolicyDocument:
@@ -156,10 +92,6 @@ Resources:
                   - "cloudformation:ValidateTemplate"
                 Resource:
                   - "*"
-  TemplateArtifactBucket:
-    Type: "AWS::S3::Bucket"
-    DeletionPolicy: 'Retain'
-    UpdateReplacePolicy: 'Retain'
       
 Parameters:
   OpsGithubHTTPSClone:
@@ -174,10 +106,16 @@ Parameters:
       pr/pull-request-ID (for example pr/25). If a branch name is specified, the branch's HEAD
       commit ID is used. If not specified, the default branch's HEAD commit ID is used.
     Default: main
-    
+  TemplateArtifactBucketArn:
+    Type: "String"
+    Description: ARN of the artifact bucket for the trollops builds
+  TemplateArtifactBucketRegionalDomain:
+    Type: String
+    Description: Regional domain of the artifact bucket used for magic links.
+
 Outputs:
-  UnrealEngine4MaginLink:
+  UnrealEngine4MagicLink:
     Description: Magic link to kick off the UE4 build process and bootstrap a pipeline for your UE4 project.
-    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=${TemplateArtifactBucket.RegionalDomainName}/u4-main.yml&stackName=MyUE4Project"
-    Exports:
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=${TemplateArtifactBucketRegionalDomain}/ue4-main.yml&stackName=MyUE4Project"
+    Export:
       Name: !Sub '${AWS::StackName}-UE4MagicLink'

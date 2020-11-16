@@ -20,7 +20,7 @@ phases:
   post_build:
     commands:
       - find ${CODEBUILD_SRC_DIR}/package -name '*.yml' -print0 -or -name '*.yaml' -print0 | xargs -0 -I {file} sh -c 'echo Validating {file}; aws cloudformation validate-template --template-body file://{file}'
-      - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/package/ue4-main.yml
+      - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/package
 artifacts:
   name: TemplateOutput
   files:

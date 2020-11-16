@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Windows Server container CI/CD pipeline for UE4 container builds
+
+Parameters: 
+  CustomActionProviderName:
+    Type: String
+    Description: Name of the custom action provider (used in CodePipeline Console UI).
+  CustomActionProviderVersion:
+    Type: String
+    Description: Version of the custom action provider (used in CodePipeline Console UI).
+  EcrUri:
+    Type: String
+    Description: Uri to the ECR repository
+  ArtifactBucketArn:
+    Type: String
+    Description: ARN of the artifact buckets.
+  BranchName:
+    Description: GitHub branch name for docker build.
+    Type: String
+    Default: master
+  GithubRepositoryName:
+    Description: GitHub repository name for docker build.
+    Type: String
+    Default: trollpurse-trollops-ue4-docker
+  GithubOrganization:
+    Type: String
+    Description: The owner of the repository of the docker build.
+    Default: trollpursepublishing
+  UE4EngineVersion:
+    Type: String
+    Description: The version of the engine to build.
+    Default: "4.25.4"
+  UE4GithubUsername:
+    Type: String
+    Description: The owner with access to the UE4 repository.
+    NoEcho: true
+  UE4GithubPrivateAccessToken:
+    Type: String
+    Description: Private Access Token for the UE4 source build.
+    NoEcho: true
+
+Mappings: 
+  RegionMap: 
+    eu-north-1: 
+      HVM64: ami-0d3968ec4e235e0a1
+    ap-south-1: 
+      HVM64: ami-020d5d26350c17069
+    eu-west-3: 
+      HVM64: ami-07aee4f2846e5cf04
+    eu-west-2:
+      HVM64: ami-0e7f0745d52979126
+    eu-west-1: 
+      HVM64: ami-0008603c05596a01f
+    ap-northeast-3: 
+      HVM64: ami-0b8d76b796975015c
+    ap-northeast-2: 
+      HVM64: ami-0633dd6a4c6881fd4
+    ap-northeast-1: 
+      HVM64: ami-0793bd62a98481bc7
+    sa-east-1: 
+      HVM64: ami-062f6ab8022513369
+    ca-central-1: 
+      HVM64: ami-0313d717e3c33049f
+    ap-southeast-1: 
+      HVM64: ami-0c7d228aebc0fb621
+    ap-southeast-2: 
+      HVM64: ami-0196e690fc8d87c58
+    eu-central-1: 
+      HVM64: ami-07449593168be85e5
+    us-east-1: 
+      HVM64: ami-02a172b0393352993
+    us-east-2: 
+      HVM64: ami-002211350933f93e9
+    us-west-1: 
+      HVM64: ami-034db65b37f87170d
+    us-west-2: 
+      HVM64: ami-0f82baff671697331
+
+Resources:
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}UE4ContainerRole"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - codepipeline.amazonaws.com
+          Sid: 1
+      Path: /
+      Policies:
+      - PolicyName: !Sub "${AWS::StackName}UE4Container"
+        PolicyDocument:
+          Statement:
+          - Action:
+            - s3:*
+            - codecommit:*
+            - codebuild:*
+            - cloudformation:*
+            Effect: Allow
+            Resource: '*'
+
+  AmazonCloudWatchEventRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}PipelineExecution"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: codepipeline:StartPipelineExecution
+                Resource: !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${WindowsContainerPipeline}'
+
+  WindowsContainerPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub "${AWS::StackName}Pipeline"
+      ArtifactStore:
+        Location: !Ref ArtifactBucketArn
+        Type: S3      
+      RoleArn: !Sub "${CodePipelineRole.Arn}"
+      Stages:
+        - Name: UE4DockerSource
+          Actions:
+          - Name: PullBuildScript
+            RunOrder: 1
+            ActionTypeId:
+              Category: Source
+              Owner: ThirdParty
+              Version: "1"
+              Provider: GitHub
+            OutputArtifacts:
+              - Name: SourceOutput
+            Configuration:
+              Owner: !Ref GithubOrganization
+              Repo: !Ref GithubRepositoryName
+              Branch: !Ref BranchName
+              PollForSourceChanges: false
+        - Name: Package
+          Actions:
+          - Name: PublishUE4Minimal
+            RunOrder: 1
+            ActionTypeId:
+              Owner: Custom
+              Category: Build
+              Provider: !Ref CustomActionProviderName
+              Version: !Ref CustomActionProviderVersion
+            Configuration:
+              ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
+              InstanceType: m5.xlarge
+              Command: !Sub "build-and-publish-ue4-minimal-docker-image.ps1 -accountId ${AWS::AccountId} -region ${AWS::Region} -repositoryName ${EcrUri}/ue4 -engineVersion ${UE4EngineVersion} -ue4GitUsername ${UE4GithubUsername} -ue4GitPersonalAccessToken ${UE4GithubPrivateAccessToken}"
+            InputArtifacts:
+              - Name: SourceOutput

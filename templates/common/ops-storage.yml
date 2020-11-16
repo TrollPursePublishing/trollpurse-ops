@@ -32,6 +32,8 @@ Resources:
         Rules:
           - Status: Enabled
             ExpirationInDays: 30
+      VersioningConfiguration:
+        Status: Enabled
 
   ArtifactStoreBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'

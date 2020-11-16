@@ -1,0 +1,209 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Bootstrap template to configure automation of the large container builder custom action
+Parameters:
+  TemplateArtifactBucketArn:
+    Type: String
+    Description: S3 ARN of Target and Source S3 Bucket Arn for CodePipeline/Build Artifacts.
+  TemplateArtifactBucketName:
+    Type: String
+    Description: Ref to S3 Bucket for Target and Source S3 Bucket Arn for CodePipeline/Build Artifacts.
+  CodePipelineRoleArn:
+    Type: String
+    Description: ARN for the executing code pipeline configuration
+  BranchName:
+    Description: GitHub branch name for release builds
+    Type: String
+    Default: main
+  GithubRepositoryName:
+    Description: GitHub repository name. For example, my-website
+    Type: String
+  GithubOrganization:
+    Type: String
+    Description: The owner of the repository. For an organization, it is the name of the organization
+  CustomActionVersion:
+    Type: String
+    Description: Version of the custom action
+    Default: "1"
+Outputs:
+  FatContainerBuilderName:
+    Description: Custom Action Provider Name
+    Value: !Sub "${AWS::StackName}-FatContainerBuilder"
+  FatContainerBuilderVersion:
+    Description: Custom Action Provider Version
+    Value: !Ref CustomActionVersion
+
+Resources:
+  FatContainerBuilder:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      Name: !Sub "${AWS::StackName}-FCB"
+      ServiceRole: !Ref FatContainerBuilderRole
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: >
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                python: 3.7
+              commands:
+                - pip install --upgrade pip
+                - pip install --upgrade awscli
+                - apt-get update
+                - apt-get -y install ruby-full
+                - apt-get -y install jq
+                - gem install cfn-nag
+            pre_build:
+              commands:
+                - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/template.yml
+                - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/template.yml
+            build:
+              commands:
+                - aws cloudformation package --template-file ${CODEBUILD_SRC_DIR}/template.yml --output-template-file ${CODEBUILD_SRC_DIR}/container-builder/main.yml --s3-bucket $TEMPLATE_BUCKET
+            post_build:
+              commands:
+                - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/container-builder/main.yml.yml
+                - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/container-builder/main.yml
+          artifacts:
+            name: TemplateOutput
+            files:
+              - 'container-builder/main.yml'
+            discard-paths: no
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: "aws/codebuild/standard:2.0"
+        
+  FatContainerBuilderRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}FcbLogs"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-FCB:*:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-FCB:*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-FCB"
+        - PolicyName: !Sub "${AWS::StackName}FcbArt"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:ListBucket"
+                  - "s3:Get*"
+                  - "s3:PutObject"
+                  - "s3:PutObjectAcl"
+                  - "s3:*MultipartUpload*"
+                Resource:
+                  - !Ref TemplateArtifactBucketArn
+                  - !Join
+                    - ''
+                    - - !Ref TemplateArtifactBucketArn
+                      - '/*'
+        - PolicyName: !Sub "${AWS::StackName}FcbCfValidate"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "cloudformation:ValidateTemplate"
+                Resource: "*"
+  CloudFormationDeployRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub '${AWS::StackName}FcbCfRole'
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: cloudformation.amazonaws.com
+          Action: sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+        - arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess
+        - arn:aws:iam::aws:policy/IAMFullAccess
+  
+  FatContainerBuilderPipeline:
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      Name: !Sub '${AWS::StackName}FCBPipeline'
+      RoleArn: !Ref CodePipelineRoleArn
+      ArtifactStore:
+        Location: !Ref TemplateArtifactBucketName
+        Type: S3
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: BuilderCfTemplateSource
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: "1"
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                Owner: !Ref GithubOrganization
+                Repo: !Ref GithubRepositoryName
+                Branch: !Ref BranchName
+                PollForSourceChanges: false
+              RunOrder: 1
+        - Name: BuildPackage
+          Actions:
+            - Name: BuildPackageCfTemplate
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: "1"
+                Provider: CodeBuild
+              OutputArtifacts:
+                - Name: TemplateOutput
+              InputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                ProjectName: !Ref FatContainerBuilder
+              RunOrder: 1
+        - Name: DeployCf
+          Actions:
+            - Name: DeployFatContainerBuilder
+              InputArtifacts:
+                - Name: TemplateOutput
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName: !Sub "${AWS::StackName}-FatContainerBuilder"
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                TemplatePath: 'TemplateOutput::container-builder/main.yml'
+                ParameterOverrides: !Sub |
+                  {
+                    "CustomActionProviderVersion": "${CustomActionVersion}"
+                  }
+              RunOrder: 1
