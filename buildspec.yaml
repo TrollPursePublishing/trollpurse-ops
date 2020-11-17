@@ -17,6 +17,7 @@ phases:
   build:
     commands:
       - aws cloudformation package --template-file ${CODEBUILD_SRC_DIR}/templates/ops/ue4/main.yml --output-template-file ${CODEBUILD_SRC_DIR}/package/ue4-main.yml --s3-bucket $TEMPLATE_BUCKET
+      - aws cloudformation package --template-file ${CODEBUILD_SRC_DIR}/templates/bootstrap/main.yml --output-template-file ${CODEBUILD_SRC_DIR}/package/bootstrap-main.yml --s3-bucket $TEMPLATE_BUCKET
   post_build:
     commands:
       - find ${CODEBUILD_SRC_DIR}/package -name '*.yml' -print0 -or -name '*.yaml' -print0 | xargs -0 -I {file} sh -c 'echo Validating {file}; aws cloudformation validate-template --template-body file://{file}'

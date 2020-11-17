@@ -7,7 +7,7 @@ Resources:
     UpdateReplacePolicy: 'Retain'
     Properties: 
       ImageTagMutability: IMMUTABLE
-      RepositoryName: 'codebuild-images'
+      RepositoryName: 'ops-images'
       RepositoryPolicyText: 
         Version: "2012-10-17"
         Statement: 
@@ -18,6 +18,7 @@ Resources:
                 - codedeploy.amazonaws.com
                 - codepipeline.amazonaws.com
                 - codebuild.amazonaws.com
+                - ec2.amazonaws.com #TODO: this should be more fine grained, needed to support the fat container builder
             Action: 
               - "ecr:GetDownloadUrlForLayer"
               - "ecr:BatchGetImage"
@@ -26,4 +27,10 @@ Resources:
               - "ecr:InitiateLayerUpload"
               - "ecr:UploadLayerPart"
               - "ecr:CompleteLayerUpload"
-          
+Outputs:
+  RepositoryName:
+    Description: The name of the repository
+    Value: !Ref CodeBuildECR
+  RepositoryArn:
+    Description: The ARN of the repository
+    Value: !GetAtt CodeBuildECR.Arn

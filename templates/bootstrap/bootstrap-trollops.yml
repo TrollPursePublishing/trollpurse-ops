@@ -2,6 +2,58 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   Bootstrap template to configure automation of new templates from Troll Purse.
 Resources:
+  ArtifactStore:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: 'Retain'
+    UpdateReplacePolicy: 'Retain'
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+  ArtifactStoreBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref ArtifactStore
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: DenyNonPipelineMutations
+            Effect: Deny
+            Action:
+              - 's3:PutObject'
+              - 's3:PutObjectAcl'
+              - 's3:DeleteObject'
+              - 's3:DeleteObjectVersion'
+              - 's3:DeleteObjectVersionTagging'
+              - 's3:DeleteBucket'
+            Resource: !Join
+              - ''
+              - - !GetAtt ArtifactStore.Arn
+                - /*
+            NotPrincipal:
+              Service:
+                - codebuild.amazonaws.com
+          - Sid: DenyUnEncryptedObjectUploads
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:PutObject'
+            Resource: !Join
+              - ''
+              - - !GetAtt ArtifactStore.Arn
+                - /*
+            Condition:
+              StringNotEquals:
+                's3:x-amz-server-side-encryption': 'aws:kms'
+          - Sid: DenyInsecureConnections
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: !Join
+              - ''
+              - - !GetAtt ArtifactStore.Arn
+                - /*
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
   BootstrapCodeBuildProject:
     Type: "AWS::CodeBuild::Project"
     Properties:
@@ -78,10 +130,10 @@ Resources:
                   - "s3:PutObjectAcl"
                   - "s3:*MultipartUpload*"
                 Resource:
-                  - !Ref TemplateArtifactBucketArn
+                  - !GetAtt ArtifactStore.Arn
                   - !Join
                     - ''
-                    - - !Ref TemplateArtifactBucketArn
+                    - - !GetAtt ArtifactStore.Arn
                       - '/*'
         - PolicyName: "AllowTemplateValidation"
           PolicyDocument:
@@ -92,7 +144,7 @@ Resources:
                   - "cloudformation:ValidateTemplate"
                 Resource:
                   - "*"
-      
+
 Parameters:
   OpsGithubHTTPSClone:
     Type: String
@@ -106,16 +158,15 @@ Parameters:
       pr/pull-request-ID (for example pr/25). If a branch name is specified, the branch's HEAD
       commit ID is used. If not specified, the default branch's HEAD commit ID is used.
     Default: main
-  TemplateArtifactBucketArn:
-    Type: "String"
-    Description: ARN of the artifact bucket for the trollops builds
-  TemplateArtifactBucketRegionalDomain:
-    Type: String
-    Description: Regional domain of the artifact bucket used for magic links.
 
 Outputs:
+  UnrealEngine4BootstrapMagicLink:
+    Description: Magic link to do the onetime kickoff of the UE4 pre-requisite build project for all of your UE4 projects.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=${ArtifactStore.RegionalDomainName}/ue4-bootstrap.yml&stackName=UE4Bootstrap"
+    Export:
+      Name: !Sub '${AWS::StackName}-UE4BootstrapMagicLink'
   UnrealEngine4MagicLink:
     Description: Magic link to kick off the UE4 build process and bootstrap a pipeline for your UE4 project.
-    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=${TemplateArtifactBucketRegionalDomain}/ue4-main.yml&stackName=MyUE4Project"
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=${ArtifactStore.RegionalDomainName}/ue4-main.yml&stackName=MyUE4Project"
     Export:
       Name: !Sub '${AWS::StackName}-UE4MagicLink'

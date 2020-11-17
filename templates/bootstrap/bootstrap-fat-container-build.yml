@@ -14,13 +14,15 @@ Parameters:
   BranchName:
     Description: GitHub branch name for release builds
     Type: String
-    Default: main
+    Default: master
   GithubRepositoryName:
     Description: GitHub repository name. For example, my-website
     Type: String
+    Default: aws-codepipeline-custom-action
   GithubOrganization:
     Type: String
     Description: The owner of the repository. For an organization, it is the name of the organization
+    Default: TrollPursePublishing
   CustomActionVersion:
     Type: String
     Description: Version of the custom action
@@ -205,5 +207,6 @@ Resources:
                 ParameterOverrides: !Sub |
                   {
                     "CustomActionProviderVersion": "${CustomActionVersion}"
+                    "CustomActionProviderName": "FatContainerBuilder"
                   }
               RunOrder: 1
