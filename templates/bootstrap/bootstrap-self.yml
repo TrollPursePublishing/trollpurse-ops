@@ -16,22 +16,6 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: DenyNonPipelineMutations
-            Effect: Deny
-            Action:
-              - 's3:PutObject'
-              - 's3:PutObjectAcl'
-              - 's3:DeleteObject'
-              - 's3:DeleteObjectVersion'
-              - 's3:DeleteObjectVersionTagging'
-              - 's3:DeleteBucket'
-            Resource: !Join
-              - ''
-              - - !GetAtt ArtifactStore.Arn
-                - /*
-            NotPrincipal:
-              Service:
-                - codebuild.amazonaws.com
           - Sid: DenyUnEncryptedObjectUploads
             Effect: Deny
             Principal: '*'
