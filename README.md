@@ -61,6 +61,11 @@ This project has a 3-step deployment phase. The first step is to bootstrap, this
 
 ### Phase One - Bootstrap Part A
 
+Create a build project for this project. This will create packaged cloudformation scripts and magic links for the next phases.
+
+```bash
+aws cloudformation deploy --template-file ./templates/bootstrap/bootstrap-troll-ops.yml --capabilities CAPABILITY_NAMED_IAM --stack-name OpsBuild
+```
 
 ### Phase Two - Bootstrap Part B
 
