@@ -1,4 +1,4 @@
-# trollpurse-trollops
+# trollpurse-ops
 
 CloudFormation Templates used by [Troll Purse](https://trollpurse.com). Hobby game development.
 
