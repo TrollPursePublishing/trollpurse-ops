@@ -3,11 +3,9 @@ Parameters:
     GithubOrganization:
         Type: String
         Description: Name of the organization on Github for access
-        Default: TrollPursePublishing
     GithubRepositoryName:
         Type: String
         Description: Name of the repository this lfs configuration.
-        Default: Estranged.Lfs
 Outputs:
     LfsEndpoint:
         Description: The Git LFS endpoint to use in your .lfsconfig

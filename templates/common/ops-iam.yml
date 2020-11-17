@@ -14,20 +14,33 @@ Parameters:
 Outputs:
   CodeBuildRoleArn:
     Description: ARN for the CodeBuild role, enables logging, ECR access, and access to artifacts
-    Value: !Sub "${CodeBuildRoleArn.Arn}"
+    Value: !GetAtt CodeBuildRole.Arn
+    
+  CodeBuildRoleName:
+    Description: Name of the CodeBuild role, enables logging, ECR access, and access to artifacts
+    Value: !Ref CodeBuildRole
 
   CodePipelineServiceRoleArn:
     Description: ARN for the Code Pipeline role, enables full access to CodeDeploy, CodeBuild, CodePipeline, and Logs
-    Value: !Sub "${CodePipelineServiceRole.Arn}"
+    Value: !GetAtt CodePipelineServiceRole.Arn
+    
+  CodePipelineServiceRoleName:
+    Description: ARN for the Code Pipeline role, enables full access to CodeDeploy, CodeBuild, CodePipeline, and Logs
+    Value: !Ref CodePipelineServiceRole
 
   CodeBuildContainerArn:
     Description: ARN for the Code Pipeline role, enables full access to CodeDeploy, CodeBuild, CodePipeline, and Logs
-    Value: !Sub "${CodeBuildContainerArn.Arn}"
+    Value: !GetAtt CodeBuildContainer.Arn
+ 
+  CodeBuildContainerName:
+    Description: ARN for the Code Pipeline role, enables full access to CodeDeploy, CodeBuild, CodePipeline, and Logs
+    Value: !Ref CodeBuildContainer
 
 Resources:
   CodePipelineServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
+      RoleName: !Sub "${AWS::StackName}CodePipelineRole"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -98,7 +111,7 @@ Resources:
                       - /*
                   - !Ref ClientDownloadBucketArn
 
-  CodeBuildContainerArn:
+  CodeBuildContainer:
     Type: 'AWS::IAM::Role'
     Properties:
       RoleName: !Sub "${AWS::StackName}ECRBuild"
@@ -139,10 +152,10 @@ Resources:
                   Resource:
                     - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
     
-  CodeBuildRoleArn:
+  CodeBuildRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Sub "${AWS::StackName}-Build"
+      RoleName: !Sub "${AWS::StackName}Build"
       AssumeRolePolicyDocument:
           Version: "2012-10-17"
           Statement:

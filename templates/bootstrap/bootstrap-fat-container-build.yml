@@ -2,15 +2,15 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   Bootstrap template to configure automation of the large container builder custom action
 Parameters:
-  TemplateArtifactBucketArn:
-    Type: String
-    Description: S3 ARN of Target and Source S3 Bucket Arn for CodePipeline/Build Artifacts.
   TemplateArtifactBucketName:
     Type: String
     Description: Ref to S3 Bucket for Target and Source S3 Bucket Arn for CodePipeline/Build Artifacts.
   CodePipelineRoleArn:
     Type: String
     Description: ARN for the executing code pipeline configuration
+  CodeBuildRoleArn:
+    Type: String
+    Description: ARN for the executing code build configuration.
   BranchName:
     Description: GitHub branch name for release builds
     Type: String
@@ -40,7 +40,7 @@ Resources:
     Type: "AWS::CodeBuild::Project"
     Properties:
       Name: !Sub "${AWS::StackName}-FCB"
-      ServiceRole: !Ref FatContainerBuilderRole
+      ServiceRole: !Ref CodeBuildRoleArn
       Artifacts:
         Type: CODEPIPELINE
       Source:
@@ -79,58 +79,6 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: "aws/codebuild/standard:2.0"
         
-  FatContainerBuilderRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - codebuild.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: "/"
-      Policies:
-        - PolicyName: !Sub "${AWS::StackName}FcbLogs"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                Resource:
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-FCB:*:*"
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-FCB:*"
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-FCB"
-        - PolicyName: !Sub "${AWS::StackName}FcbArt"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "s3:ListBucket"
-                  - "s3:Get*"
-                  - "s3:PutObject"
-                  - "s3:PutObjectAcl"
-                  - "s3:*MultipartUpload*"
-                Resource:
-                  - !Ref TemplateArtifactBucketArn
-                  - !Join
-                    - ''
-                    - - !Ref TemplateArtifactBucketArn
-                      - '/*'
-        - PolicyName: !Sub "${AWS::StackName}FcbCfValidate"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "cloudformation:ValidateTemplate"
-                Resource: "*"
   CloudFormationDeployRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -207,6 +155,6 @@ Resources:
                 ParameterOverrides: !Sub |
                   {
                     "CustomActionProviderVersion": "${CustomActionVersion}"
-                    "CustomActionProviderName": "FatContainerBuilder"
+                    "CustomActionProviderName": "${AWS::StackName}-FatContainerBuilder"
                   }
               RunOrder: 1

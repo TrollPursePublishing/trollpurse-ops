@@ -1,7 +1,38 @@
-Description: Builds Infrastructure to build and deploy a Unreal Engine 4 container for CI and registers a build for a UE4 project.
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Builds Infrastructure to build and deploy a Unreal Engine 4 container for CI and registers a build for a UE
 
 Parameters:
-  
-
+  GithubOrganization:
+    Type: String
+    Description: Name of the organization on Github for access
+  GithubRepositoryName:
+    Type: String
+    Description: Name of the repository this lfs configuration.
+  GitLfsServerless:
+    Type: String
+    AllowedValues:
+      - Yes
+      - No
+    Description: Deploy your own Git LFS serverless API for asset heavy projects?
+    ConstraintDescription: Yes or No
+    Default: Yes
+Conditions:
+  BuildGitLfsServerless:
+    !Equals [ !Ref GitLfsServerless, Yes ]
 Resources:
-  
+  GitLFSServerless:
+    Type: AWS::CloudFormation::Stack
+    Condition: BuildGitLfsServerless
+    Properties:
+      TemplateURL: /templates/ops/core/ops-git-lfs-serverless.yml
+      Parameters:
+        GithubOrganization: !Ref GithubOrganization
+        GithubRepositoryName: !Ref GithubRepositoryName
+        
+Outputs:
+  LfsUri:
+    Condition: BuildGitLfsServerless
+    Description: Uri for git lfs configuration
+    Value: !GetAtt GitLFSServerless.Outputs.LfsEndpoint
+    Export:
+      Name: $!Sub "{AWS::StackName}-LfsUri"

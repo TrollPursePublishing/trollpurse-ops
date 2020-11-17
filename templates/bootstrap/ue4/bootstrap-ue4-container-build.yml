@@ -15,22 +15,6 @@ Parameters:
   ArtifactBucketArn:
     Type: String
     Description: ARN of the artifact buckets.
-  BranchName:
-    Description: GitHub branch name for docker build.
-    Type: String
-    Default: master
-  GithubRepositoryName:
-    Description: GitHub repository name for docker build.
-    Type: String
-    Default: trollpurse-trollops-ue4-docker
-  GithubOrganization:
-    Type: String
-    Description: The owner of the repository of the docker build.
-    Default: trollpursepublishing
-  UE4EngineVersion:
-    Type: String
-    Description: The version of the engine to build.
-    Default: "4.25.4"
   UE4GithubUsername:
     Type: String
     Description: The owner with access to the UE4 repository.
@@ -39,6 +23,22 @@ Parameters:
     Type: String
     Description: Private Access Token for the UE4 source build.
     NoEcho: true
+  BranchName:
+    Description: GitHub branch name for docker build.
+    Type: String
+    Default: master
+  GithubRepositoryName:
+    Description: GitHub repository name for docker build.
+    Type: String
+    Default: trollpurse-ops-ue4-docker
+  GithubOrganization:
+    Type: String
+    Description: The owner of the repository of the docker build.
+    Default: trollpursepublishing
+  UE4EngineVersion:
+    Type: String
+    Description: The version of the engine to build.
+    Default: "4.25.4"
 
 Mappings: 
   RegionMap: 
@@ -161,6 +161,6 @@ Resources:
             Configuration:
               ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
               InstanceType: m5.xlarge
-              Command: !Sub "build-and-publish-ue4-minimal-docker-image.ps1 -accountId ${AWS::AccountId} -region ${AWS::Region} -repositoryName ${EcrUri}/ue4 -engineVersion ${UE4EngineVersion} -ue4GitUsername ${UE4GithubUsername} -ue4GitPersonalAccessToken ${UE4GithubPrivateAccessToken}"
+              Command: !Sub "build-and-publish-ue4-minimal-docker-image.ps1 -accountId ${AWS::AccountId} -region ${AWS::Region} -repositoryName ${EcrUri}/ue4-full:${UE4EngineVersion} -engineVersion ${UE4EngineVersion} -ue4GitUsername ${UE4GithubUsername} -ue4GitPersonalAccessToken ${UE4GithubPrivateAccessToken}"
             InputArtifacts:
               - Name: SourceOutput

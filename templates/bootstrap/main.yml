@@ -1,12 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Parameters:
-  GithubOrganization:
-    Type: String
-    Description: Name of the organization on Github for access
-  GithubRepositoryName:
-    Type: String
-    Description: Name of the repository this lfs configuration.
   BigWindowsContainerBuilder:
     Type: String
     AllowedValues:
@@ -21,20 +15,19 @@ Parameters:
       - No
     Description: Should the pre-requisites be deployed that enable UE4 support?
     ConstraintDescription: Yes or No
-  GitLfsServerless:
+  UE4GithubUsername:
     Type: String
-    AllowedValues:
-      - Yes
-      - No
-    Description: Deploy your own Git LFS serverless API for asset heavy projects?
-    ConstraintDescription: Yes or No
+    Description: Only needed if UE4Support is Yes. The username that has access to Unreal Engine or forked repo on GitHub.
+    Default: "N/A"
+  UE4GithubPrivateAccessToken:
+    Type: String
+    Description: Only needed if UE4Support is Yes. The private access token needed to build the ue4 source container
+    Default: "N/A"
 Conditions:
   BuildUE4Stuff:
     !Equals [ !Ref UE4Support, Yes ]
   BuildWindowsContainerStuff:
     !Or [!Equals [ !Ref BigWindowsContainerBuilder, Yes ], Condition: BuildUE4Stuff ]
-  BuildGitLfsServerless:
-    !Equals [ !Ref GitLfsServerless, Yes ]
 Resources:
   ArtifactStores:
     Type: AWS::CloudFormation::Stack
@@ -54,29 +47,26 @@ Resources:
         ArtifactStoreBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreArn
         ClientDownloadBucketArn: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketArn
         CodeBuildImageEcrArn: !GetAtt ContainerRepository.Outputs.RepositoryArn
-    
-  GitLFSServerless:
-    Type: AWS::CloudFormation::Stack
-    Condition: BuildGitLfsServerless
-    Properties:
-      TemplateURL: /templates/bootstrap/bootstrap-git-lfs-serverless.yml
       
   WindowsContainerBuilder:
     Type: AWS::CloudFormation::Stack
     Condition: BuildWindowsContainerStuff
     Properties:
       TemplateURL: /templates/bootstrap/bootstrap-fat-container-build.yml
+      Parameters:
+        TemplateArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreName
+        CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
+        CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
       
   UE4ContainerPipeline:
     Type: AWS::CloudFormation::Stack
     Condition: BuildUE4Stuff
     Properties:
       TemplateURL: /templates/bootstrap/ue4/bootstrap-ue4-container-builder.yml
-      
-Outputs:
-  LfsUri:
-    Condition: BuildGitLfsServerless
-    Description: URI for the Git Lfs endpoint for configuring your project's Git LFS.
-    Value: !GetAtt GitLFSServerless.Outputs.LfsEndpoint
-    Export:
-      Name: GlobalOps-LfsUri
+      Parameters:
+        CustomActionProviderName: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderName
+        CustomActionProviderVersion: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderVersion
+        EcrUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"
+        ArtifactBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreArn
+        UE4GithubUsername: !Ref UE4GithubUsername
+        UE4GithubPrivateAccessToken: !Ref UE4GithubPrivateAccessToken
