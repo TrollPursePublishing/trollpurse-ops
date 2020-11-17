@@ -3,10 +3,10 @@ Description: Storage for build artifacts and client packages. Artifacts are remo
 Outputs:
   ClientDownloadBucketArn:
     Description: The ARN for the final output bucket of downloadable client packages (not public)
-    Value: !Sub "${ClientDownloadBucket.Arn}"
+    Value: !GetAtt ClientDownloadBucket.Arn
   ArtifactStoreBucketArn:
     Description: The ARN for the encrypted artifact store
-    Value: !Sub "${ArtifactStoreBucket.Arn}"
+    Value: !GetAtt ArtifactStoreBucket.Arn
   ClientDownloadBucketName:
     Description: The name for the final output bucket of downloadable client packages (not public)
     Value: !Ref ClientDownloadBucket

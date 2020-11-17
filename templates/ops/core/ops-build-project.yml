@@ -61,4 +61,3 @@ Resources:
         Image: !Ref ProjectEnvironmentImageName
         ImagePullCredentialsType: !Ref ImageCredentials
       TimeoutInMinutes: 60
-      BadgeEnabled: true
