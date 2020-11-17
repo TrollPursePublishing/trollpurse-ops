@@ -50,6 +50,10 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: /templates/common/ops-iam.yml
+      Parameters:
+        ArtifactStoreBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreArn
+        ClientDownloadBucketArn: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketArn
+        CodeBuildImageEcrArn: !GetAtt ContainerRepository.Outputs.RepositoryArn
     
   GitLFSServerless:
     Type: AWS::CloudFormation::Stack
@@ -68,3 +72,11 @@ Resources:
     Condition: BuildUE4Stuff
     Properties:
       TemplateURL: /templates/bootstrap/ue4/bootstrap-ue4-container-builder.yml
+      
+Outputs:
+  LfsUri:
+    Condition: BuildGitLfsServerless
+    Description: URI for the Git Lfs endpoint for configuring your project's Git LFS.
+    Value: !GetAtt GitLFSServerless.Outputs.LfsEndpoint
+    Export:
+      Name: GlobalOps-LfsUri

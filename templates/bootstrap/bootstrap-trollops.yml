@@ -61,7 +61,8 @@ Resources:
       Description: "Build project for Troll Purse Troll Ops."
       ServiceRole: !GetAtt BootstrapRole.Arn
       Artifacts:
-        Type: NO_ARTIFACTS
+        Type: S3
+        Location: !Ref ArtifactStore
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
@@ -135,7 +136,7 @@ Resources:
                     - ''
                     - - !GetAtt ArtifactStore.Arn
                       - '/*'
-        - PolicyName: "AllowTemplateValidation"
+        - PolicyName: !Sub "${AWS::StackName}CfValidate"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -160,13 +161,23 @@ Parameters:
     Default: main
 
 Outputs:
+  ArtifactBucketArn:
+    Description: Where the artifacts are stored, which will be packaged cloudformation templates
+    Value: !GetAtt ArtifactStore.Arn
+    Export:
+      Name: GlobalOps-ArtifactStoreArn
+  ArtifactBucketName:
+    Description: Where the artifacts are stored, which will be packaged cloudformation templates
+    Value: !Ref ArtifactStore
+    Export:
+      Name: GlobalOps-ArtifactStoreName
   UnrealEngine4BootstrapMagicLink:
     Description: Magic link to do the onetime kickoff of the UE4 pre-requisite build project for all of your UE4 projects.
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=${ArtifactStore.RegionalDomainName}/ue4-bootstrap.yml&stackName=UE4Bootstrap"
     Export:
-      Name: !Sub '${AWS::StackName}-UE4BootstrapMagicLink'
+      Name: GlobalOps-UE4BootstrapMagicLink
   UnrealEngine4MagicLink:
     Description: Magic link to kick off the UE4 build process and bootstrap a pipeline for your UE4 project.
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=${ArtifactStore.RegionalDomainName}/ue4-main.yml&stackName=MyUE4Project"
     Export:
-      Name: !Sub '${AWS::StackName}-UE4MagicLink'
+      Name: GlobalOps-UE4MagicLink
