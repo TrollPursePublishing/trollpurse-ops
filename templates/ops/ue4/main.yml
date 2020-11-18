@@ -35,4 +35,4 @@ Outputs:
     Description: Uri for git lfs configuration
     Value: !GetAtt GitLFSServerless.Outputs.LfsEndpoint
     Export:
-      Name: $!Sub "{AWS::StackName}-LfsUri"
+      Name: !Sub "{AWS::StackName}-LfsUri"

@@ -67,8 +67,21 @@ Create a build project for this project. This will create packaged cloudformatio
 aws cloudformation deploy --template-file ./templates/bootstrap/bootstrap-self.yml --capabilities CAPABILITY_NAMED_IAM --stack-name OpsBuild
 ```
 
+Build the project pacakged templates wit this command.
+
+```bash
+aws codebuild start-build --project-name OpsBuild-BS
+```
+
 ### Phase Two - Bootstrap Part B
 
+You can now get the magic links with the following script.
+
+```bash
+aws cloudformation --no-paginate list-exports --query "Exports[*].{Name:Name,Link:Value}"
+```
+
+Copy and Paste the "Link" field for any of the exports named like *MagicLink in your browser. This will let you start a new cloudformation job in the AWS Console.
 
 ### Phase Three - For Each New Project
 
