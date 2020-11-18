@@ -15,6 +15,8 @@ Resources:
               SSEAlgorithm: AES256
   ArtifactStore:
     Type: 'AWS::S3::Bucket'
+    DeletionPolicy: 'Retain'
+    UpdateReplacePolicy: 'Retain'
     Properties:
       VersioningConfiguration:
         Status: Enabled
@@ -58,16 +60,26 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: AllowTemplateGet
+          - Sid: AllowServiceTemplateGet
             Effect: Allow
             Principal:
-              AWS: 
-                - !Sub "arn:aws:iam::${AWS::AccountId}/*"
               Service:
                 - codebuild.amazonaws.com
                 - codepipeline.amazonaws.com
                 - codedeploy.amazonaws.com
                 - cloudformation.amazonaws.com
+            Action: 
+              - 's3:GetObject'
+              - 's3:GetObjectVersion'
+            Resource: !Join
+              - ''
+              - - !GetAtt TemplateDeploymentBucket.Arn
+                - /*
+          - Sid: AllowRoleTemplateGet
+            Effect: Allow
+            Principal:
+              AWS: 
+                - !Sub "${AWS::AccountId}"
             Action: 
               - 's3:GetObject'
               - 's3:GetObjectVersion'
@@ -108,6 +120,9 @@ Resources:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: "aws/codebuild/standard:2.0"
+        EnvironmentVariables:
+          - Value: TEMPLATE_BUCKET
+            Name: !Ref TemplateDeploymentBucket
       Artifacts:
         Type: CODEPIPELINE
       Source:
@@ -245,6 +260,7 @@ Resources:
                 Owner: !Ref GithubOrganization
                 Repo: !Ref GithubRepository
                 Branch: !Ref SourceVersion
+                OAuthToken: !Ref OAuthToken
                 PollForSourceChanges: true
               RunOrder: 1
         - Name: Build
@@ -261,7 +277,6 @@ Resources:
                 - Name: SourceOutput
               Configuration:
                 ProjectName: !Ref BootstrapCodeBuildProject
-                EnvironmentVariables: !Sub '[{"Name": "TEMPLATE_BUCKET", "Value": "${TemplateDeploymentBucket}"}]'
               RunOrder: 1
         - Name: Deploy
           Actions:
@@ -290,6 +305,10 @@ Parameters:
     Type: String
     Description: This repository
     Default: trollpurse-ops
+  OAuthToken:
+    Type: String
+    Description: Your PAC from Github, required.
+    NoEcho: true
   SourceVersion:
     Type: String
     Description: >-

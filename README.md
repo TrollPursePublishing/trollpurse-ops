@@ -61,7 +61,7 @@ This project has a 3-step deployment phase. The first step is to bootstrap, this
 Create a build project for this project. This will create packaged cloudformation scripts and magic links for the next phases.
 
 ```bash
-aws cloudformation deploy --template-file ./templates/bootstrap/bootstrap-self.yml --capabilities CAPABILITY_NAMED_IAM --stack-name OpsBuild
+aws cloudformation deploy --template-file ./templates/bootstrap/bootstrap-self.yml --capabilities CAPABILITY_NAMED_IAM --stack-name OpsBuild --parameter-overrides "OAuthToken={Your GitHub Personal Access Token}"
 ```
 
 Kick off the required first build.
