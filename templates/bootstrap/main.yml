@@ -27,6 +27,7 @@ Parameters:
     Type: String
     Description: Only needed if UE4Support is Yes. The private access token needed to build the ue4 source container
     Default: "N/A"
+    NoEcho: true
 Conditions:
   BuildUE4Stuff:
     !Equals [ !Ref UE4Support, Yes ]
