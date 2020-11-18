@@ -47,12 +47,12 @@ Resources:
   Storage:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ../core/ops-storage.yml
+      TemplateURL: ../../common/ops-storage.yml
 
   Roles:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ../core/ops-iam.yml
+      TemplateURL: ../../common/ops-iam.yml
       Parameters:
         ArtifactStoreBucketArn: !GetAtt Storage.Outputs.ArtifactStoreBucketArn
         ClientDownloadBucketArn: !GetAtt Storage.Outputs.ClientDownloadBucketArn
