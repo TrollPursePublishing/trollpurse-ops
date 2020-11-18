@@ -261,9 +261,7 @@ Resources:
                 - Name: SourceOutput
               Configuration:
                 ProjectName: !Ref BootstrapCodeBuildProject
-                EnvironmentVariables:
-                  - Value: !Ref TemplateDeploymentBucket
-                    Name: TEMPLATE_BUCKET
+                EnvironmentVariables: !Sub '[{"Name": "TEMPLATE_BUCKET", "Value": "${TemplateDeploymentBucket}"}]'
               RunOrder: 1
         - Name: Deploy
           Actions:
