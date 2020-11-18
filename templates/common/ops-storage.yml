@@ -43,23 +43,29 @@ Resources:
         Version: 2012-10-17
         Statement:
           - Sid: DenyNonPipelineMutations
-            Effect: Deny
+            Effect: Allow
             Action:
               - 's3:PutObject'
               - 's3:PutObjectAcl'
+              - 's3:PutObjectVersionAcl'
               - 's3:DeleteObject'
               - 's3:DeleteObjectVersion'
               - 's3:DeleteObjectVersionTagging'
               - 's3:DeleteBucket'
-            Resource: !Join
-              - ''
-              - - !GetAtt ArtifactStoreBucket.Arn
-                - /*
-            NotPrincipal:
+              - 's3:GetObject'
+              - 's3:GetObjectVersion'
+            Resource: 
+              - !Join
+                - ''
+                - - !GetAtt ArtifactStoreBucket.Arn
+                  - /*
+              - !GetAtt ArtifactStoreBucket.Arn
+            Principal:
               Service:
                 - codebuild.amazonaws.com
                 - codepipeline.amazonaws.com
                 - codedeploy.amazonaws.com
+                - ec2.amazonaws.com
           - Sid: DenyUnEncryptedObjectUploads
             Effect: Deny
             Principal: '*'
