@@ -65,7 +65,7 @@ Resources:
                 - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/template.yml
             build:
               commands:
-                - aws cloudformation package --template-file ${CODEBUILD_SRC_DIR}/template.yml --output-template-file ${CODEBUILD_SRC_DIR}/container-builder/main.yml --s3-bucket $TEMPLATE_BUCKET --s3-prefix ue4-package
+                - aws cloudformation package --template-file ${CODEBUILD_SRC_DIR}/template.yml --output-template-file ${CODEBUILD_SRC_DIR}/container-builder/main.yml --s3-bucket $TEMPLATE_BUCKET --s3-prefix ue4-package --kms-key-id $CODEBUILD_KMS_KEY_ID
             post_build:
               commands:
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/container-builder/main.yml.yml

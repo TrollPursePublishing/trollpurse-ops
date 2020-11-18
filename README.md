@@ -56,9 +56,6 @@ Once you execute the cloud formation script for "custom" projects, simply add a 
 
 This project has a 3-step deployment phase. The first step is to bootstrap, this will create a build project for this repo so you will get the latest updates (you can point it to a fork to keep control of costs). The second step is to create pipelines for each of your projects.
 
-> __Advanced Users__
-> There is an optional intermediate step (not provided) where you can create another CodePipeline project that listens to the Artifact Bucket from Part A to trigger CloudFormation stack updates on all of your stacks generated in Phases One and Two.
-
 ### Phase One - Bootstrap Part A
 
 Create a build project for this project. This will create packaged cloudformation scripts and magic links for the next phases.
@@ -67,10 +64,16 @@ Create a build project for this project. This will create packaged cloudformatio
 aws cloudformation deploy --template-file ./templates/bootstrap/bootstrap-self.yml --capabilities CAPABILITY_NAMED_IAM --stack-name OpsBuild
 ```
 
-Build the project pacakged templates wit this command.
+Kick off the required first build.
 
 ```bash
 aws codebuild start-build --project-name OpsBuild-BS
+```
+
+After the build succeeds you may opt out of automatically keeping templates up to date by destroying the stack. The s3 bucket created to store the CloudFormation scripts for the Magic Links are set to 'Retain' and thus still be available after the stack is deleted. Keep in mind you may need to save the links from the script shown in Phase Two before deleting the stack.
+
+```bash
+aws cloudformation delete-stack --stack-name OpsBuild
 ```
 
 ### Phase Two - Bootstrap Part B
