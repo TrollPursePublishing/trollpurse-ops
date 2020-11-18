@@ -277,6 +277,7 @@ Resources:
                 - Name: SourceOutput
               Configuration:
                 ProjectName: !Ref BootstrapCodeBuildProject
+                EnvironmentVariables: !Sub '[{"name":"TEMPLATE_BUCKET","value":"${TemplateDeploymentBucket}","type":"PLAINTEXT"}]'
               RunOrder: 1
         - Name: Deploy
           Actions:
