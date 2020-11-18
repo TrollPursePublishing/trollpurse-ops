@@ -15,7 +15,7 @@ Parameters:
   ArtifactBucketArn:
     Type: String
     Description: ARN of the artifact buckets.
-  CodePipelineRoleArn
+  CodePipelineRoleArn:
     Type: String
     Description: ARN for CodePipeline.
   UE4GithubUsername:
@@ -109,7 +109,7 @@ Resources:
       ArtifactStore:
         Location: !Ref ArtifactBucketArn
         Type: S3      
-      RoleArn: Ref! CodePipelineRoleArn
+      RoleArn: !Ref CodePipelineRoleArn
       Stages:
         - Name: UE4DockerSource
           Actions:
