@@ -62,7 +62,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: BuildUE4Stuff
     Properties:
-      TemplateURL: ./ue4/bootstrap-ue4-container-builder.yml
+      TemplateURL: ue4/bootstrap-ue4-container-build.yml
       Parameters:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CustomActionProviderName: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderName
