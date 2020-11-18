@@ -23,6 +23,10 @@ Parameters:
     Type: String
     Description: The owner of the repository. For an organization, it is the name of the organization
     Default: TrollPursePublishing
+  GithubAccessToken:
+    Type: String
+    Description: Needed to pull changes from Github (no webhook)
+    NoEcho: true
   CustomActionVersion:
     Type: String
     Description: Version of the custom action
@@ -80,8 +84,8 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: "aws/codebuild/standard:2.0"
         EnvironmentVariables:
-          - Value: TEMPLATE_BUCKET
-            Name: !Ref TemplateArtifactBucketName
+          - Value: !Ref TemplateArtifactBucketName
+            Name: TEMPLATE_BUCKET
         
   CloudFormationDeployRole:
     Type: 'AWS::IAM::Role'
@@ -123,7 +127,8 @@ Resources:
                 Owner: !Ref GithubOrganization
                 Repo: !Ref GithubRepositoryName
                 Branch: !Ref BranchName
-                PollForSourceChanges: false
+                OAuthToken: !Ref GithubAccessToken
+                PollForSourceChanges: true
               RunOrder: 1
         - Name: BuildPackage
           Actions:

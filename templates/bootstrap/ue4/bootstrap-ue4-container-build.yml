@@ -38,6 +38,10 @@ Parameters:
     Type: String
     Description: The owner of the repository of the docker build.
     Default: trollpursepublishing
+  GithubAccessToken:
+    Type: String
+    Description: Needed to pull changes from Github (no webhook)
+    NoEcho: true
   UE4EngineVersion:
     Type: String
     Description: The version of the engine to build.
@@ -81,27 +85,6 @@ Mappings:
       HVM64: ami-0f82baff671697331
 
 Resources:
-  AmazonCloudWatchEventRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - events.amazonaws.com
-            Action: sts:AssumeRole
-      Path: /
-      Policies:
-        - PolicyName: !Sub "${AWS::StackName}PipelineExecution"
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: codepipeline:StartPipelineExecution
-                Resource: !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${WindowsContainerPipeline}'
-
   WindowsContainerPipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
@@ -126,10 +109,11 @@ Resources:
               Owner: !Ref GithubOrganization
               Repo: !Ref GithubRepositoryName
               Branch: !Ref BranchName
-              PollForSourceChanges: false
+              OAuthToken: !Ref GithubAccessToken
+              PollForSourceChanges: true
         - Name: Package
           Actions:
-          - Name: PublishUE4Minimal
+          - Name: BuildPublishUE4Full
             RunOrder: 1
             ActionTypeId:
               Owner: Custom

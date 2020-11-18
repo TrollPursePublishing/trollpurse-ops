@@ -15,6 +15,10 @@ Parameters:
       - No
     Description: Should the pre-requisites be deployed that enable UE4 support?
     ConstraintDescription: Yes or No
+  GithubPrivateAccessToken:
+    Type: String
+    Description: Needed to access repositories in CodePipeline, despite them being public.
+    NoEcho: true
   UE4GithubUsername:
     Type: String
     Description: Only needed if UE4Support is Yes. The username that has access to Unreal Engine or forked repo on GitHub.
@@ -57,6 +61,7 @@ Resources:
         TemplateArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreName
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
+        GithubAccessToken: !Ref GithubPrivateAccessToken
       
   UE4ContainerPipeline:
     Type: AWS::CloudFormation::Stack
@@ -71,6 +76,7 @@ Resources:
         ArtifactBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreArn
         UE4GithubUsername: !Ref UE4GithubUsername
         UE4GithubPrivateAccessToken: !Ref UE4GithubPrivateAccessToken
+        GithubAccessToken: !Ref GithubPrivateAccessToken
 Outputs:
   DockerImageRepository:
     Description: Uri for ECR to be used for codebuild custom containers.
