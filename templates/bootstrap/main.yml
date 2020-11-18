@@ -64,6 +64,7 @@ Resources:
     Properties:
       TemplateURL: /templates/bootstrap/ue4/bootstrap-ue4-container-builder.yml
       Parameters:
+        CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CustomActionProviderName: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderName
         CustomActionProviderVersion: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderVersion
         EcrUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"

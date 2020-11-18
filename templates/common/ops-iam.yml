@@ -40,7 +40,6 @@ Resources:
   CodePipelineServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Sub "${AWS::StackName}CodePipelineRole"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -114,7 +113,6 @@ Resources:
   CodeBuildContainer:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Sub "${AWS::StackName}ECRBuild"
       AssumeRolePolicyDocument:
           Version: "2012-10-17"
           Statement:
@@ -155,7 +153,6 @@ Resources:
   CodeBuildRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Sub "${AWS::StackName}Build"
       AssumeRolePolicyDocument:
           Version: "2012-10-17"
           Statement:

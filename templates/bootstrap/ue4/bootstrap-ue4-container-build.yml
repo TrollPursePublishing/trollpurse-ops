@@ -15,6 +15,9 @@ Parameters:
   ArtifactBucketArn:
     Type: String
     Description: ARN of the artifact buckets.
+  CodePipelineRoleArn
+    Type: String
+    Description: ARN for CodePipeline.
   UE4GithubUsername:
     Type: String
     Description: The owner with access to the UE4 repository.
@@ -26,7 +29,7 @@ Parameters:
   BranchName:
     Description: GitHub branch name for docker build.
     Type: String
-    Default: master
+    Default: main
   GithubRepositoryName:
     Description: GitHub repository name for docker build.
     Type: String
@@ -78,31 +81,6 @@ Mappings:
       HVM64: ami-0f82baff671697331
 
 Resources:
-  CodePipelineRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${AWS::StackName}UE4ContainerRole"
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action: sts:AssumeRole
-          Effect: Allow
-          Principal:
-            Service:
-            - codepipeline.amazonaws.com
-          Sid: 1
-      Path: /
-      Policies:
-      - PolicyName: !Sub "${AWS::StackName}UE4Container"
-        PolicyDocument:
-          Statement:
-          - Action:
-            - s3:*
-            - codecommit:*
-            - codebuild:*
-            - cloudformation:*
-            Effect: Allow
-            Resource: '*'
-
   AmazonCloudWatchEventRole:
     Type: AWS::IAM::Role
     Properties:
@@ -131,7 +109,7 @@ Resources:
       ArtifactStore:
         Location: !Ref ArtifactBucketArn
         Type: S3      
-      RoleArn: !Sub "${CodePipelineRole.Arn}"
+      RoleArn: Ref! CodePipelineRoleArn
       Stages:
         - Name: UE4DockerSource
           Actions:
