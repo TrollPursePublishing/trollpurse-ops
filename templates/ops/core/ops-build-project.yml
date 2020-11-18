@@ -11,7 +11,7 @@ Parameters:
       - LINUX_GPU_CONTAINER
       - WINDOWS_CONTAINER
       - WINDOWS_SERVER_2019_CONTAINER
-    Default: WINDOWS_CONTAINER
+    Default: WINDOWS_SERVER_2019_CONTAINER
       
   ProjectEnvironmentComputeType:
     Type: String

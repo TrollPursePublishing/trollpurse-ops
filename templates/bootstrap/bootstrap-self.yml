@@ -60,7 +60,7 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: AllowServiceTemplateGet
+          - Sid: AllowServiceTemplate
             Effect: Allow
             Principal:
               Service:
@@ -71,6 +71,10 @@ Resources:
             Action: 
               - 's3:GetObject'
               - 's3:GetObjectVersion'
+              - 's3:PutObject'
+              - 's3:PutObjectAcl'
+              - 's3:PutObjectVersionAcl'
+              - 's3:*MultipartUpload*'
             Resource: !Join
               - ''
               - - !GetAtt TemplateDeploymentBucket.Arn
@@ -87,17 +91,6 @@ Resources:
               - ''
               - - !GetAtt TemplateDeploymentBucket.Arn
                 - /*
-          - Sid: DenyUnEncryptedObjectUploads
-            Effect: Deny
-            Principal: '*'
-            Action: 's3:PutObject'
-            Resource: !Join
-              - ''
-              - - !GetAtt TemplateDeploymentBucket.Arn
-                - /*
-            Condition:
-              StringNotEquals:
-                's3:x-amz-server-side-encryption': 'AES256'
           - Sid: DenyInsecureConnections
             Effect: Deny
             Principal: '*'
@@ -166,6 +159,7 @@ Resources:
                   - "s3:Get*"
                   - "s3:PutObject"
                   - "s3:PutObjectAcl"
+                  - "s3:PutObjectVersionAcl"
                   - "s3:*MultipartUpload*"
                 Resource:
                   - !GetAtt ArtifactStore.Arn
@@ -227,6 +221,7 @@ Resources:
                   - "s3:Get*"
                   - "s3:PutObject"
                   - "s3:PutObjectAcl"
+                  - "s3:PutObjectVersionAcl"
                   - "s3:*MultipartUpload*"
                 Resource:
                   - !Join
@@ -320,9 +315,9 @@ Parameters:
     Default: main
 
 Outputs:
-  UnrealEngine4BootstrapMagicLink:
+  GamePipelineBootstrapMagicLink:
     Description: Magic link to do the onetime kickoff of the UE4 pre-requisite build project for all of your UE4 projects.
-    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=https://${TemplateDeploymentBucket.RegionalDomainName}/ue4-bootstrap.yml&stackName=UE4Bootstrap"
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=https://${TemplateDeploymentBucket.RegionalDomainName}/bootstrap-main.yml&stackName=GamePipelinesBootstrap"
     Export:
       Name: GlobalOps-UE4BootstrapMagicLink
   UnrealEngine4MagicLink:

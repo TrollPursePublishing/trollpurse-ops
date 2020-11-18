@@ -67,7 +67,18 @@ Resources:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CustomActionProviderName: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderName
         CustomActionProviderVersion: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderVersion
-        EcrUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"
+        DockerImageRepository: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"
         ArtifactBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreArn
         UE4GithubUsername: !Ref UE4GithubUsername
         UE4GithubPrivateAccessToken: !Ref UE4GithubPrivateAccessToken
+Outputs:
+  DockerImageRepository:
+    Description: Uri for ECR to be used for codebuild custom containers.
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"
+    Export:
+      Name: DockerImageRepository
+  EcrArn:
+    Description: Arn for repository containing custom build images meant for codebuild.
+    Value: !GetAtt ContainerRepository.Outputs.RepositoryArn
+    Export:
+      Name: OpsEcrArn

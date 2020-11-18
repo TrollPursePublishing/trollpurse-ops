@@ -8,7 +8,15 @@ Parameters:
   GithubRepositoryName:
     Type: String
     Description: Name of the repository this lfs configuration.
-  GitLfsServerless:
+  GithubPersonalAccessToken:
+    Type: String
+    Description: Token needed to access repository.
+    NoEcho: true
+  GithubReleaseBranch:
+    Type: String
+    Description: Branch to build for releases
+    Default: main
+  CreateGitLfsServerless:
     Type: String
     AllowedValues:
       - Yes
@@ -16,11 +24,18 @@ Parameters:
     Description: Deploy your own Git LFS serverless API for asset heavy projects?
     ConstraintDescription: Yes or No
     Default: Yes
+  EngineVersion:
+    Type: String
+    Description: Version of Unreal Engine 4 to use.
+    Default: "4.25.4"
+  NotificationEmailDistribution:
+    Type: String
+    Description: Email distribution to notify when builds have failed or succeeded
 Conditions:
   BuildGitLfsServerless:
-    !Equals [ !Ref GitLfsServerless, Yes ]
+    !Equals [ !Ref CreateGitLfsServerless, Yes ]
 Resources:
-  GitLFSServerless:
+  GitLfsServerless:
     Type: AWS::CloudFormation::Stack
     Condition: BuildGitLfsServerless
     Properties:
@@ -28,11 +43,53 @@ Resources:
       Parameters:
         GithubOrganization: !Ref GithubOrganization
         GithubRepositoryName: !Ref GithubRepositoryName
+
+  Storage:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ../core/ops-storage.yml
+
+  Roles:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ../core/ops-iam.yml
+      Parameters:
+        ArtifactStoreBucketArn: !GetAtt Storage.Outputs.ArtifactStoreBucketArn
+        ClientDownloadBucketArn: !GetAtt Storage.Outputs.ClientDownloadBucketArn
+        CodeBuildImageEcrArn: !ImportValue OpsEcrArn
+
+  BuildProject:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ../core/ops-build-project.yml
+      Parameters:
+        BuildRoleArn: !GetAtt Roles.Outputs.CodeBuildRoleArn
+        ProjectEnvironmentImageName:
+          !Join
+            - ''
+            - - !ImportValue DockerRepository
+              - "/ue4-full:"
+              - !Ref EngineVersion
+
+  Pipeline:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ../core/ops-github-pipeline.yml
+      Parameters:
+        BranchName: !Ref GithubReleaseBranch
+        GithubRepositoryName: !Ref GithubRepositoryName
+        GithubOrganization: !Ref GithubOrganization
+        GitHubSecret: !Ref GithubPersonalAccessToken
+        NotificationEmailDistribution: !Ref NotificationEmailDistribution
+        BuildProject: !GetAtt BuildProject.Outputs.ProjectName
+        CodePipelineRoleArn: !GetAtt Roles.Outputs.CodePipelineRoleArn
+        ClientDownloadBucketName: !GetAtt Storage.Outputs.ClientDownloadBucketName
+        ArtifactStoreBucketName: !GetAtt Storage.Outputs.ArtifactStoreBucketName
         
 Outputs:
   LfsUri:
     Condition: BuildGitLfsServerless
     Description: Uri for git lfs configuration
-    Value: !GetAtt GitLFSServerless.Outputs.LfsEndpoint
+    Value: !GetAtt GitLfsServerless.Outputs.LfsEndpoint
     Export:
       Name: !Sub "${AWS::StackName}-LfsUri"

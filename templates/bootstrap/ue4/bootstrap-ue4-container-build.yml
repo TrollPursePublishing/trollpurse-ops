@@ -9,9 +9,9 @@ Parameters:
   CustomActionProviderVersion:
     Type: String
     Description: Version of the custom action provider (used in CodePipeline Console UI).
-  EcrUri:
+  DockerImageRepository:
     Type: String
-    Description: Uri to the ECR repository
+    Description: Uri to the docker repository
   ArtifactBucketArn:
     Type: String
     Description: ARN of the artifact buckets.
@@ -139,6 +139,6 @@ Resources:
             Configuration:
               ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
               InstanceType: m5.xlarge
-              Command: !Sub "build-and-publish-ue4-minimal-docker-image.ps1 -accountId ${AWS::AccountId} -region ${AWS::Region} -repositoryName ${EcrUri}/ue4-full:${UE4EngineVersion} -engineVersion ${UE4EngineVersion} -ue4GitUsername ${UE4GithubUsername} -ue4GitPersonalAccessToken ${UE4GithubPrivateAccessToken}"
+              Command: !Sub "build-and-publish-ue4-minimal-docker-image.ps1 -accountId ${AWS::AccountId} -region ${AWS::Region} -repositoryName ${DockerImageRepository}/ue4-full:${UE4EngineVersion} -engineVersion ${UE4EngineVersion} -ue4GitUsername ${UE4GithubUsername} -ue4GitPersonalAccessToken ${UE4GithubPrivateAccessToken}"
             InputArtifacts:
               - Name: SourceOutput
