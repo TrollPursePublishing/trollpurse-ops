@@ -229,7 +229,7 @@ Resources:
     Type: 'AWS::CodePipeline::Pipeline'
     Properties:
       Name: !Sub '${AWS::StackName}Pipeline'
-      RoleArn: !Ref CodePipelineServiceRole
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
       Stages:
         - Name: Source
           Actions:
