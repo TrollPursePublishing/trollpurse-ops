@@ -12,6 +12,7 @@ phases:
       - gem install cfn-nag
   pre_build:
     commands:
+      - echo "Template Bucket Package Location is $TEMPLATE_BUCKET"
       - mkdir ${CODEBUILD_SRC_DIR}/package
       - find ${CODEBUILD_SRC_DIR}/templates -name '*.yml' -print0 -or -name '*.yaml' -print0 | xargs -0 -I {file} sh -c 'echo Validating {file}; aws cloudformation validate-template --template-body file://{file}'
       - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/templates/
