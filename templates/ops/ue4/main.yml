@@ -24,7 +24,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: BuildGitLfsServerless
     Properties:
-      TemplateURL: /templates/ops/core/ops-git-lfs-serverless.yml
+      TemplateURL: ../core/ops-git-lfs-serverless.yml
       Parameters:
         GithubOrganization: !Ref GithubOrganization
         GithubRepositoryName: !Ref GithubRepositoryName
@@ -35,4 +35,4 @@ Outputs:
     Description: Uri for git lfs configuration
     Value: !GetAtt GitLFSServerless.Outputs.LfsEndpoint
     Export:
-      Name: !Sub "{AWS::StackName}-LfsUri"
+      Name: !Sub "${AWS::StackName}-LfsUri"

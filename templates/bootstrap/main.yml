@@ -32,17 +32,17 @@ Resources:
   ArtifactStores:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: /templates/common/ops-storage.yml
+      TemplateURL: ../common/ops-storage.yml
   
   ContainerRepository:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: /templates/common/ops-ecr.yml
+      TemplateURL: ../common/ops-ecr.yml
   
   PipelineRoles:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: /templates/common/ops-iam.yml
+      TemplateURL: ../common/ops-iam.yml
       Parameters:
         ArtifactStoreBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreArn
         ClientDownloadBucketArn: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketArn
@@ -52,7 +52,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: BuildWindowsContainerStuff
     Properties:
-      TemplateURL: /templates/bootstrap/bootstrap-fat-container-build.yml
+      TemplateURL: bootstrap-fat-container-build.yml
       Parameters:
         TemplateArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreName
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
@@ -62,7 +62,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: BuildUE4Stuff
     Properties:
-      TemplateURL: /templates/bootstrap/ue4/bootstrap-ue4-container-builder.yml
+      TemplateURL: ue4/bootstrap-ue4-container-builder.yml
       Parameters:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CustomActionProviderName: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderName
