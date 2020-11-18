@@ -81,7 +81,7 @@ You can now get the magic links with the following script.
 aws cloudformation --no-paginate list-exports --query "Exports[*].{Name:Name,Link:Value}"
 ```
 
-Copy and Paste the "Link" field for any of the exports named like *MagicLink in your browser. This will let you start a new cloudformation job in the AWS Console.
+Copy and Paste the "Link" field for any of the exports with the "Name" like *MagicLink in your browser. This will let you start a new cloudformation job in the AWS Console.
 
 ### Phase Three - For Each New Project
 
