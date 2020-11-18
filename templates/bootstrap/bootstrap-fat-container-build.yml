@@ -60,11 +60,12 @@ Resources:
                 - gem install cfn-nag
             pre_build:
               commands:
+                - mkdir ${CODEBUILD_SRC_DIR}/container-builder
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/template.yml
                 - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/template.yml
             build:
               commands:
-                - aws cloudformation package --template-file ${CODEBUILD_SRC_DIR}/template.yml --output-template-file ${CODEBUILD_SRC_DIR}/container-builder/main.yml --s3-bucket $TEMPLATE_BUCKET
+                - aws cloudformation package --template-file ${CODEBUILD_SRC_DIR}/template.yml --output-template-file ${CODEBUILD_SRC_DIR}/container-builder/main.yml --s3-bucket $TEMPLATE_BUCKET --s3-prefix ue4-package
             post_build:
               commands:
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/container-builder/main.yml.yml
@@ -78,6 +79,9 @@ Resources:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: "aws/codebuild/standard:2.0"
+        EnvironmentVariables:
+          - Value: TEMPLATE_BUCKET
+            Name: !Ref TemplateArtifactBucketName
         
   CloudFormationDeployRole:
     Type: 'AWS::IAM::Role'
