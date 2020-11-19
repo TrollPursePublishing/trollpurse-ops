@@ -72,6 +72,7 @@ Resources:
         Type: CODEPIPELINE
         BuildSpec: >
           version 0.2
+          
           phases:
             build:
               commands:
@@ -88,6 +89,7 @@ Resources:
         Type: CODEPIPELINE
         BuildSpec: >
           version: 0.2
+          
           phases:
             install:
               runtime-versions:
