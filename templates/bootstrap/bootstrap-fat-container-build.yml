@@ -36,7 +36,7 @@ Parameters:
 Outputs:
   FatContainerBuilderName:
     Description: Custom Action Provider Name
-    Value: LargeContainerBuilder
+    Value: MassiveContainerBuilder
 
 Resources:
   LambdaDeployWaitHandle:
@@ -59,7 +59,7 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: "aws/codebuild/standard:4.0"
         EnvironmentVariables:
-          - Value: LargeContainerBuilder
+          - Value: MassiveContainerBuilder
             Name: PROVIDER_NAME
           - Value: !Ref LambdaDeployWaitHandle
             Name: SIGNAL_URL
@@ -126,7 +126,7 @@ Resources:
         EnvironmentVariables:
           - Value: !Ref PackageArtifactBucketName
             Name: TEMPLATE_BUCKET
-          - Value: LargeContainerBuilder
+          - Value: MassiveContainerBuilder
             Name: PROVIDER_NAME
           - Value: !Ref LambdaDeployWaitHandle
             Name: SIGNAL_URL
