@@ -153,6 +153,7 @@ Resources:
         - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
         - arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess
         - arn:aws:iam::aws:policy/AmazonSSMFullAccess
+        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
   
   FatContainerBuilderPipeline:
     Type: 'AWS::CodePipeline::Pipeline'
