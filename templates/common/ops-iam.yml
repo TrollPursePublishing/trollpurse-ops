@@ -212,6 +212,11 @@ Resources:
                       - ''
                       - - !Ref ArtifactStoreBucketArn
                         - '/*'
+                    - !Join
+                    - ''
+                    - - !Ref ClientDownloadBucketArn
+                      - /*
+                    - !Ref ClientDownloadBucketArn
           - PolicyName: !Sub "${AWS::StackName}CFVal"
             PolicyDocument:
               Version: "2012-10-17"
