@@ -27,6 +27,11 @@ Resources:
              - ServerSideEncryptionByDefault:
                  SSEAlgorithm: AES256
   ClientDownloadBucketPolicy:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F16
+            reason: "The Allow Effect with the '*' matches /ops/ path roles. Ideally, there should be an account control to prevent these roles being created outside of ops pipelines and formations."
     Type: 'AWS::S3::BucketPolicy'
     Properties:
       Bucket: !Ref ClientDownloadBucket
@@ -67,7 +72,7 @@ Resources:
           - Sid: AllowAccountGet
             Effect: Allow
             Principal:
-              AWS: 
+              AWS:
                 - !Sub "${AWS::AccountId}"
             Action: 
               - 's3:GetObject'
