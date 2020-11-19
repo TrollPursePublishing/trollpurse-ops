@@ -47,7 +47,7 @@ Resources:
     Properties: 
       Count: 1
       Handle: !Ref LambdaDeployWaitHandle
-      Timeout: "600"
+      Timeout: "900"
   
   LambdaDeployedSignal:
     Type: "AWS::CodeBuild::Project"
@@ -73,7 +73,7 @@ Resources:
           phases:
             build:
               commands:
-                - 'curl --silent --output /dev/null -X PUT -H ''Content-Type:'' --data-binary ''{"Status":"SUCCESS","Reason":"Custom Action Deployed","UniqueId":"$PROVIDER_NAME","Data":"Application has completed configuration."}'' "$SIGNAL_URL"'
+                - 'curl -X PUT -H ''Content-Type:'' --data-binary ''{"Status":"SUCCESS","Reason":"Custom Action Deployed","UniqueId":"${PROVIDER_NAME}","Data":"Application has completed configuration."}'' "${SIGNAL_URL}"'
         
   FatContainerBuilder:
     Type: "AWS::CodeBuild::Project"
