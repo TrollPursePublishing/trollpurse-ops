@@ -5,10 +5,10 @@ Parameters:
     Type: String
     AllowedValues:
       - DockerRepositoryOnly
-      - WindowsContainerBuilder
+      - LargeContainerBuilder
       - UnrealEngine4Support
-    Description: What support systems should be bootstrapped? UnrealEngine4Support implies WindowsContainerBuilder and DockerRepositoryOnly. WindowsContainerBuilder implies DockerRepositoryOnly.
-    ConstraintDescription: Only one of DockerRepositoryOnly, WindowsContainerBuilder, and UnrealEngine4Support.
+    Description: What support systems should be bootstrapped? UnrealEngine4Support implies LargeContainerBuilder and DockerRepositoryOnly. LargeContainerBuilder implies DockerRepositoryOnly.
+    ConstraintDescription: Only one of DockerRepositoryOnly, LargeContainerBuilder, and UnrealEngine4Support.
   GithubPrivateAccessToken:
     Type: String
     Description: Needed to access repositories in CodePipeline, despite them being public.
@@ -26,7 +26,7 @@ Conditions:
   BuildUE4Stuff:
     !Equals [ !Ref BuildConfiguration, UnrealEngine4Support ]
   BuildWindowsContainerStuff:
-    !Or [!Equals [ !Ref BuildConfiguration, WindowsContainerBuilder ], Condition: BuildUE4Stuff ]
+    !Or [!Equals [ !Ref BuildConfiguration, LargeContainerBuilder ], Condition: BuildUE4Stuff ]
   NeedsRolesAndArtifacts:
     !Not [!Equals [!Ref BuildConfiguration, DockerRepositoryOnly] ]
 Resources:
@@ -51,7 +51,7 @@ Resources:
         ClientDownloadBucketArn: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketArn
         CodeBuildImageEcrArn: !GetAtt ContainerRepository.Outputs.RepositoryArn
       
-  WindowsContainerBuilder:
+  LargeContainerBuilder:
     Type: AWS::CloudFormation::Stack
     Condition: BuildWindowsContainerStuff
     Properties:
@@ -71,8 +71,8 @@ Resources:
       TemplateURL: ue4/bootstrap-ue4-container-build.yml
       Parameters:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
-        CustomActionProviderName: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderName
-        CustomActionProviderVersion: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderVersion
+        CustomActionProviderName: !GetAtt LargeContainerBuilder.Outputs.FatContainerBuilderName
+        CustomActionProviderVersion: "1"
         DockerImageRepository: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"
         ArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketName
         UE4GithubUsername: !Ref UE4GithubUsername

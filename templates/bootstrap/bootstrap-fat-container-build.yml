@@ -33,17 +33,10 @@ Parameters:
     Type: String
     Description: Needed to pull changes from Github (no webhook)
     NoEcho: true
-  CustomActionVersion:
-    Type: String
-    Description: Version of the custom action
-    Default: "1"
 Outputs:
   FatContainerBuilderName:
     Description: Custom Action Provider Name
-    Value: WindowsContainerBuilder
-  FatContainerBuilderVersion:
-    Description: Custom Action Provider Version
-    Value: !Ref CustomActionVersion
+    Value: LargeContainerBuilder
 
 Resources:
   LambdaDeployWaitHandle:
@@ -54,7 +47,7 @@ Resources:
     Properties: 
       Count: 1
       Handle: !Ref LambdaDeployWaitHandle
-      Timeout: "900"
+      Timeout: "600"
   
   LambdaDeployedSignal:
     Type: "AWS::CodeBuild::Project"
@@ -66,10 +59,8 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: "aws/codebuild/standard:4.0"
         EnvironmentVariables:
-          - Value: WindowsContainerBuilder
+          - Value: LargeContainerBuilder
             Name: PROVIDER_NAME
-          - Value: !Ref CustomActionVersion
-            Name: PROVIDER_VERSION
           - Value: !Ref LambdaDeployWaitHandle
             Name: SIGNAL_URL
       Artifacts:
@@ -82,7 +73,7 @@ Resources:
           phases:
             build:
               commands:
-                - 'curl --silent --output /dev/null -X PUT -H \'Content-Type:\' --data-binary \'{"Status" : "SUCCESS","Reason" : "Custom Action Deployed" ,"UniqueId" : "${PROVIDER_NAME}:${PROVIDER_VERSION}","Data" : "Application has completed configuration."}\' "${SIGNAL_URL}"'
+                - 'curl --silent --output /dev/null -X PUT -H \'Content-Type:\' --data-binary \'{"Status":"SUCCESS","Reason":"Custom Action Deployed","UniqueId":"$PROVIDER_NAME","Data":"Application has completed configuration."}\'"$SIGNAL_URL"'
         
   FatContainerBuilder:
     Type: "AWS::CodeBuild::Project"
@@ -110,6 +101,7 @@ Resources:
             pre_build:
               commands:
                 - mkdir ${CODEBUILD_SRC_DIR}/container-builder
+                - touch ${CODEBUILD_SRC_DIR}/container-builder/config.json
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/template.yml
                 - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/template.yml
             build:
@@ -119,10 +111,13 @@ Resources:
               commands:
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/container-builder/main.yml
                 - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/container-builder/main.yml
+                - configuration_template='{\"Parameters\":{\"CustomActionProviderName\": \"%s\",\"CustomActionProviderVersion\": \"%s\"}}'
+                - printf "$configuration_template" "$PROVIDER_NAME" "$CODEBUILD_BUILD_NUMBER" > ${CODEBUILD_SRC_DIR}/container-builder/config.json
           artifacts:
             name: TemplateOutput
             files:
               - 'container-builder/main.yml'
+              - 'container-builder/config.json'
             discard-paths: no
       Environment:
         Type: LINUX_CONTAINER
@@ -131,10 +126,8 @@ Resources:
         EnvironmentVariables:
           - Value: !Ref PackageArtifactBucketName
             Name: TEMPLATE_BUCKET
-          - Value: WindowsContainerBuilder
+          - Value: LargeContainerBuilder
             Name: PROVIDER_NAME
-          - Value: !Ref CustomActionVersion
-            Name: PROVIDER_VERSION
           - Value: !Ref LambdaDeployWaitHandle
             Name: SIGNAL_URL
         
@@ -230,11 +223,7 @@ Resources:
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt CloudFormationDeployRole.Arn
                 TemplatePath: 'TemplateOutput::container-builder/main.yml'
-                ParameterOverrides: !Sub |
-                  {
-                    "CustomActionProviderVersion": "${CustomActionVersion}",
-                    "CustomActionProviderName": "WindowsContainerBuilder"
-                  }
+                TemplateConfiguration: 'TemplateOutput::container-builder/config.json'
               RunOrder: 1
             - Name: SignalCompletion
               InputArtifacts:
