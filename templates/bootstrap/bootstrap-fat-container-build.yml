@@ -58,7 +58,7 @@ Resources:
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: "aws/codebuild/standard:2.0"
+        Image: "aws/codebuild/standard:4.0"
         EnvironmentVariables:
           - Value: WindowsContainerBuilder
             Name: PROVIDER_NAME
@@ -76,7 +76,7 @@ Resources:
           phases:
             build:
               commands:
-                curl --silent --output /dev/null -X PUT -H 'Content-Type:' --data-binary '{"Status" : "SUCCESS","Reason" : "Custom Action Deployed" ,"UniqueId" : "${PROVIDER_NAME}:${PROVIDER_VERSION}","Data" : "Application has completed configuration."}' "${SIGNAL_URL}"
+                - 'curl --silent --output /dev/null -X PUT -H \'Content-Type:\' --data-binary \'{"Status" : "SUCCESS","Reason" : "Custom Action Deployed" ,"UniqueId" : "${PROVIDER_NAME}:${PROVIDER_VERSION}","Data" : "Application has completed configuration."}\' "${SIGNAL_URL}"'
         
   FatContainerBuilder:
     Type: "AWS::CodeBuild::Project"
@@ -113,9 +113,8 @@ Resources:
               commands:
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/container-builder/main.yml
                 - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/container-builder/main.yml
-              
               finally:
-                - if ["$CODEBUILD_BUILD_SUCCEEDING" = "1"]; then curl --silent --output /dev/null -X PUT -H 'Content-Type:' --data-binary '{"Status" : "FAILURE","Reason" : "Custom Action Build & Package Failed" ,"UniqueId" : "${PROVIDER_NAME}:${PROVIDER_VERSION}","Data" : "Application has failed configuration."}' "${SIGNAL_URL}"; fi;
+                - 'if ["$CODEBUILD_BUILD_SUCCEEDING" = "1"]; then curl --silent --output /dev/null -X PUT -H \'Content-Type:\' --data-binary \'{"Status" : "FAILURE","Reason" : "Custom Action Build & Package Failed" ,"UniqueId" : "${PROVIDER_NAME}:${PROVIDER_VERSION}","Data" : "Application has failed configuration."}\' "${SIGNAL_URL}"; fi;'
           artifacts:
             name: TemplateOutput
             files:
@@ -124,7 +123,7 @@ Resources:
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: "aws/codebuild/standard:2.0"
+        Image: "aws/codebuild/standard:4.0"
         EnvironmentVariables:
           - Value: !Ref TemplateArtifactBucketName
             Name: TEMPLATE_BUCKET
