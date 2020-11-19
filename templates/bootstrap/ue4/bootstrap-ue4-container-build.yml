@@ -12,9 +12,9 @@ Parameters:
   DockerImageRepository:
     Type: String
     Description: Uri to the docker repository
-  ArtifactBucketArn:
+  ArtifactBucketName:
     Type: String
-    Description: ARN of the artifact buckets.
+    Description: Name of the artifact buckets.
   CodePipelineRoleArn:
     Type: String
     Description: ARN for CodePipeline.
@@ -90,7 +90,7 @@ Resources:
     Properties:
       Name: !Sub "${AWS::StackName}Pipeline"
       ArtifactStore:
-        Location: !Ref ArtifactBucketArn
+        Location: !Ref ArtifactBucketName
         Type: S3      
       RoleArn: !Ref CodePipelineRoleArn
       Stages:

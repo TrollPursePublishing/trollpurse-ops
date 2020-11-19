@@ -34,7 +34,7 @@ Parameters:
 Outputs:
   FatContainerBuilderName:
     Description: Custom Action Provider Name
-    Value: !Sub "${AWS::StackName}-FatContainerBuilder"
+    Value: WindowsContainerBuilder
   FatContainerBuilderVersion:
     Description: Custom Action Provider Version
     Value: !Ref CustomActionVersion
@@ -156,13 +156,13 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
-                StackName: !Sub "${AWS::StackName}-FatContainerBuilder"
+                StackName: !Sub "${AWS::StackName}FCB"
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt CloudFormationDeployRole.Arn
                 TemplatePath: 'TemplateOutput::container-builder/main.yml'
                 ParameterOverrides: !Sub |
                   {
                     "CustomActionProviderVersion": "${CustomActionVersion}"
-                    "CustomActionProviderName": "${AWS::StackName}-FatContainerBuilder"
+                    "CustomActionProviderName": "WindowsContainerBuilder"
                   }
               RunOrder: 1
