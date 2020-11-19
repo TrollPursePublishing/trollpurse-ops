@@ -59,6 +59,7 @@ Resources:
       Parameters:
         TemplateArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketName
         PackageArtifactBucketName: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketName
+        PackageArtifactBucketArn: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketArn
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
         GithubAccessToken: !Ref GithubPrivateAccessToken

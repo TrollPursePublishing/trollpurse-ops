@@ -52,7 +52,19 @@ Resources:
               - ''
               - - !GetAtt ClientDownloadBucket.Arn
                 - /*
-          - Sid: AllowRoleTemplateGet
+          - Sid: AllowOpsRoles
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::StackName}:role/ops/*'
+            Action: 
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource: !Join
+              - ''
+              - - !GetAtt ClientDownloadBucket.Arn
+                - /*
+          - Sid: AllowAccountGet
             Effect: Allow
             Principal:
               AWS: 

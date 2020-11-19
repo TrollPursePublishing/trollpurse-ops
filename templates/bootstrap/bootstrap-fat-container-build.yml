@@ -8,6 +8,9 @@ Parameters:
   PackageArtifactBucketName:
     Type: String
     Description: S3 Bucket name for packaging stuff readable by CloudFormation.
+  PackageArtifactBucketArn:
+    Type: String
+    Description: S3 Bucket Arn for packaging stuff readable by CloudFormation.
   CodePipelineRoleArn:
     Type: String
     Description: ARN for the executing code pipeline configuration
@@ -145,7 +148,7 @@ Resources:
           Principal:
             Service: cloudformation.amazonaws.com
           Action: sts:AssumeRole
-      Path: "/ops/"
+      Path: /ops/
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/IAMFullAccess
         - arn:aws:iam::aws:policy/AWSLambda_FullAccess
@@ -154,6 +157,21 @@ Resources:
         - arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess
         - arn:aws:iam::aws:policy/AmazonSSMFullAccess
         - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}CfPolicy"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action:
+                - "s3:GetObject"
+                - "s3:GetObjectVersion"
+              Resource:
+                - !Join
+                  - ''
+                  - - !Ref PackageArtifactBucketArn
+                    - /*
+                - !Ref PackageArtifactBucketArn
   
   FatContainerBuilderPipeline:
     Type: 'AWS::CodePipeline::Pipeline'
