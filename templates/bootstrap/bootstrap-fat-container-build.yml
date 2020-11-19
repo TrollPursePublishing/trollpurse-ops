@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Bootstrap template to configure automation of the large container builder custom action
+  Bootstrap template to configure automation of the large container builder custom action. This is a stack that deploys a stack form a github repository and will not complete until that does.
 Parameters:
   TemplateArtifactBucketName:
     Type: String
@@ -40,6 +40,43 @@ Outputs:
     Value: !Ref CustomActionVersion
 
 Resources:
+  LambdaDeployWaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+  
+  LambdaDeployWaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    Properties: 
+      Count: 1
+      Handle: !Ref LambdaDeployWaitHandle
+      Timeout: "900"
+  
+  LambdaDeployedSignal:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      Name: !Sub "${AWS::StackName}-FCBS"
+      ServiceRole: !Ref CodeBuildRoleArn
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: "aws/codebuild/standard:2.0"
+        EnvironmentVariables:
+          - Value: WindowsContainerBuilder
+            Name: PROVIDER_NAME
+          - Value: !Ref CustomActionVersion
+            Name: PROVIDER_VERSION
+          - Value: !Ref LambdaDeployWaitHandle
+            Name: SIGNAL_URL
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: >
+          version 0.2
+          phases:
+            build:
+              commands:
+                curl --silent --output /dev/null -X PUT -H 'Content-Type:' --data-binary '{"Status" : "SUCCESS","Reason" : "Custom Action Deployed" ,"UniqueId" : "${PROVIDER_NAME}:${PROVIDER_VERSION}","Data" : "Application has completed configuration."}' "${SIGNAL_URL}"
+        
   FatContainerBuilder:
     Type: "AWS::CodeBuild::Project"
     Properties:
@@ -166,3 +203,14 @@ Resources:
                     "CustomActionProviderName": "WindowsContainerBuilder"
                   }
               RunOrder: 1
+            - Name: SignalCompletion
+              InputArtifacts:
+                - Name: TemplateOutput
+              ActionTypeId:
+                Category: Test
+                Owner: AWS
+                Version: "1"
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref LambdaDeployedSignal
+              RunOrder: 2
