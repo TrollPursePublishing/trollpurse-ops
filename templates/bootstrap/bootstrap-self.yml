@@ -319,7 +319,7 @@ Outputs:
     Description: Magic link to do the onetime kickoff of the UE4 pre-requisite build project for all of your UE4 projects.
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=https://${TemplateDeploymentBucket.RegionalDomainName}/bootstrap-main.yml&stackName=GamePipelinesBootstrap"
     Export:
-      Name: GlobalOps-UE4BootstrapMagicLink
+      Name: GlobalOps-GamePipelineMagicLink
   UnrealEngine4MagicLink:
     Description: Magic link to kick off the UE4 build process and bootstrap a pipeline for your UE4 project.
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/create/review?templateURL=https://${TemplateDeploymentBucket.RegionalDomainName}/ue4-main.yml&stackName=MyUE4Project"
