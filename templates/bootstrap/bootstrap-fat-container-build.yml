@@ -147,9 +147,12 @@ Resources:
           Action: sts:AssumeRole
       Path: "/ops/"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
-        - arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess
         - arn:aws:iam::aws:policy/IAMFullAccess
+        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
+        - arn:aws:iam::aws:policy/CloudWatchEventsFullAccess
+        - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
+        - arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess
+        - arn:aws:iam::aws:policy/AmazonSSMFullAccess
   
   FatContainerBuilderPipeline:
     Type: 'AWS::CodePipeline::Pipeline'
