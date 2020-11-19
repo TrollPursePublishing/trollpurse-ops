@@ -113,8 +113,6 @@ Resources:
               commands:
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/container-builder/main.yml
                 - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/container-builder/main.yml
-              finally:
-                - 'if ["$CODEBUILD_BUILD_SUCCEEDING" = "1"]; then curl --silent --output /dev/null -X PUT -H \'Content-Type:\' --data-binary \'{"Status" : "FAILURE","Reason" : "Custom Action Build & Package Failed" ,"UniqueId" : "${PROVIDER_NAME}:${PROVIDER_VERSION}","Data" : "Application has failed configuration."}\' "${SIGNAL_URL}"; fi;'
           artifacts:
             name: TemplateOutput
             files:
