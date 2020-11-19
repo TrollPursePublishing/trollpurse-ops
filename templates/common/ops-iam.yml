@@ -201,3 +201,11 @@ Resources:
                       - ''
                       - - !Ref ArtifactStoreBucketArn
                         - '/*'
+          - PolicyName: !Sub "${AWS::StackName}CFVal"
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: "Allow"
+                  Action:
+                    - 'cloudformation:ValidateTemplate'
+                  Resource: "*"
