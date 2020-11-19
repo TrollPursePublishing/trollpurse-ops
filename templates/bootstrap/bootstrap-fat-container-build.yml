@@ -5,6 +5,9 @@ Parameters:
   TemplateArtifactBucketName:
     Type: String
     Description: Ref to S3 Bucket for Target and Source S3 Bucket Arn for CodePipeline/Build Artifacts.
+  PackageArtifactBucketName:
+    Type: String
+    Description: S3 Bucket name for packaging stuff readable by CloudFormation.
   CodePipelineRoleArn:
     Type: String
     Description: ARN for the executing code pipeline configuration
@@ -108,7 +111,7 @@ Resources:
                 - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/template.yml
             build:
               commands:
-                - aws cloudformation package --template-file ${CODEBUILD_SRC_DIR}/template.yml --output-template-file ${CODEBUILD_SRC_DIR}/container-builder/main.yml --s3-bucket ${TEMPLATE_BUCKET} --s3-prefix container-builder --kms-key-id ${CODEBUILD_KMS_KEY_ID}
+                - aws cloudformation package --template-file ${CODEBUILD_SRC_DIR}/template.yml --output-template-file ${CODEBUILD_SRC_DIR}/container-builder/main.yml --s3-bucket ${TEMPLATE_BUCKET} --s3-prefix container-builder
             post_build:
               commands:
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/container-builder/main.yml
@@ -123,7 +126,7 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: "aws/codebuild/standard:4.0"
         EnvironmentVariables:
-          - Value: !Ref TemplateArtifactBucketName
+          - Value: !Ref PackageArtifactBucketName
             Name: TEMPLATE_BUCKET
           - Value: WindowsContainerBuilder
             Name: PROVIDER_NAME

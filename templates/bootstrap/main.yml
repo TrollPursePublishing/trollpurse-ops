@@ -60,6 +60,7 @@ Resources:
       TemplateURL: bootstrap-fat-container-build.yml
       Parameters:
         TemplateArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketName
+        PackageArtifactBucketName: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketName
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
         GithubAccessToken: !Ref GithubPrivateAccessToken
