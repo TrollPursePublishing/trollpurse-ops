@@ -56,13 +56,13 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - "ecr:GetDownloadUrlForLayer"
-                  - "ecr:BatchGetImage"
-                  - "ecr:BatchCheckLayerAvailability"
-                  - "ecr:PutImage"
-                  - "ecr:InitiateLayerUpload"
-                  - "ecr:UploadLayerPart"
-                  - "ecr:CompleteLayerUpload"
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:PutImage
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
                 Resource:
                   - !Ref CodeBuildImageEcrArn
                   - !Sub "${CodeBuildImageEcrArn}/*"
@@ -72,6 +72,17 @@ Resources:
                   - 'iam:PassRole'
                 Resource:
                   - !Sub 'arn:aws:iam::${AWS::AccountId}:role/*CodePipelineServiceRole*'
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStacks
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:SetStackPolicy
+                  - cloudformation:ValidateTemplate
+                  - cloudformation:UpdateStack
+                Resource: "*"
               - Effect: Allow
                 Action:
                   - codebuild:BatchGetBuilds
