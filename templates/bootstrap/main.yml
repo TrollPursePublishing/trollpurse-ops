@@ -49,7 +49,7 @@ Resources:
     Properties:
       TemplateURL: ../common/ops-iam.yml
       Parameters:
-        ArtifactStoreBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreArn
+        ArtifactStoreBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketArn
         ClientDownloadBucketArn: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketArn
         CodeBuildImageEcrArn: !GetAtt ContainerRepository.Outputs.RepositoryArn
       
@@ -59,7 +59,7 @@ Resources:
     Properties:
       TemplateURL: bootstrap-fat-container-build.yml
       Parameters:
-        TemplateArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreName
+        TemplateArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketName
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
         GithubAccessToken: !Ref GithubPrivateAccessToken
@@ -74,7 +74,7 @@ Resources:
         CustomActionProviderName: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderName
         CustomActionProviderVersion: !GetAtt WindowsContainerBuilder.Outputs.FatContainerBuilderVersion
         DockerImageRepository: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"
-        ArtifactBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreArn
+        ArtifactBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketArn
         UE4GithubUsername: !Ref UE4GithubUsername
         UE4GithubPrivateAccessToken: !Ref UE4GithubPrivateAccessToken
         GithubAccessToken: !Ref GithubPrivateAccessToken
