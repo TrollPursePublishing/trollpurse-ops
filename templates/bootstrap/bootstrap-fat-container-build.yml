@@ -73,7 +73,7 @@ Resources:
           phases:
             build:
               commands:
-                - 'curl --silent --output /dev/null -X PUT -H \'Content-Type:\' --data-binary \'{"Status":"SUCCESS","Reason":"Custom Action Deployed","UniqueId":"$PROVIDER_NAME","Data":"Application has completed configuration."}\'"$SIGNAL_URL"'
+                - 'curl --silent --output /dev/null -X PUT -H ''Content-Type:'' --data-binary ''{"Status":"SUCCESS","Reason":"Custom Action Deployed","UniqueId":"$PROVIDER_NAME","Data":"Application has completed configuration."}'' "$SIGNAL_URL"'
         
   FatContainerBuilder:
     Type: "AWS::CodeBuild::Project"
@@ -84,7 +84,7 @@ Resources:
         Type: CODEPIPELINE
       Source:
         Type: CODEPIPELINE
-        BuildSpec: >
+        BuildSpec: |
           version: 0.2
           
           phases:
@@ -111,7 +111,7 @@ Resources:
               commands:
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/container-builder/main.yml
                 - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/container-builder/main.yml
-                - configuration_template='{\"Parameters\":{\"CustomActionProviderName\": \"%s\",\"CustomActionProviderVersion\": \"%s\"}}'
+                - 'configuration_template=''{"Parameters":{"CustomActionProviderName": "%s","CustomActionProviderVersion": "%s"}}'''
                 - printf "$configuration_template" "$PROVIDER_NAME" "$CODEBUILD_BUILD_NUMBER" > ${CODEBUILD_SRC_DIR}/container-builder/config.json
           artifacts:
             name: TemplateOutput
