@@ -106,17 +106,14 @@ Resources:
                 - mkdir ${CODEBUILD_SRC_DIR}/container-builder
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/template.yml
                 - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/template.yml
-              finally:
-                - if ["$CODEBUILD_BUILD_SUCCEEDING" = "1"]; then curl --silent --output /dev/null -X PUT -H 'Content-Type:' --data-binary '{"Status" : "FAILURE","Reason" : "Custom Action Build & Package Failed" ,"UniqueId" : "${PROVIDER_NAME}:${PROVIDER_VERSION}","Data" : "Application has failed configuration."}' "${SIGNAL_URL}"; fi;
             build:
               commands:
                 - aws cloudformation package --template-file ${CODEBUILD_SRC_DIR}/template.yml --output-template-file ${CODEBUILD_SRC_DIR}/container-builder/main.yml --s3-bucket ${TEMPLATE_BUCKET} --s3-prefix ue4-package --kms-key-id ${CODEBUILD_KMS_KEY_ID}
-              finally:
-                - if ["$CODEBUILD_BUILD_SUCCEEDING" = "1"]; then curl --silent --output /dev/null -X PUT -H 'Content-Type:' --data-binary '{"Status" : "FAILURE","Reason" : "Custom Action Build & Package Failed" ,"UniqueId" : "${PROVIDER_NAME}:${PROVIDER_VERSION}","Data" : "Application has failed configuration."}' "${SIGNAL_URL}"; fi;
             post_build:
               commands:
                 - aws cloudformation validate-template --template-body file://${CODEBUILD_SRC_DIR}/container-builder/main.yml
                 - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/container-builder/main.yml
+              
               finally:
                 - if ["$CODEBUILD_BUILD_SUCCEEDING" = "1"]; then curl --silent --output /dev/null -X PUT -H 'Content-Type:' --data-binary '{"Status" : "FAILURE","Reason" : "Custom Action Build & Package Failed" ,"UniqueId" : "${PROVIDER_NAME}:${PROVIDER_VERSION}","Data" : "Application has failed configuration."}' "${SIGNAL_URL}"; fi;
           artifacts:
