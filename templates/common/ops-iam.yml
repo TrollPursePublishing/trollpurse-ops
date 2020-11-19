@@ -76,13 +76,20 @@ Resources:
                 Action:
                   - cloudformation:CreateStack
                   - cloudformation:DeleteStack
-                  - cloudformation:DescribeStackEvents
                   - cloudformation:DescribeStacks
-                  - cloudformation:GetTemplateSummary
+                  - cloudformation:UpdateStack
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
                   - cloudformation:SetStackPolicy
                   - cloudformation:ValidateTemplate
-                  - cloudformation:UpdateStack
                 Resource: "*"
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/ops/*'
               - Effect: Allow
                 Action:
                   - codebuild:BatchGetBuilds

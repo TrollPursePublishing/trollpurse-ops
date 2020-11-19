@@ -134,7 +134,7 @@ Resources:
                 - codebuild.amazonaws.com
             Action:
               - sts:AssumeRole
-      Path: "/"
+      Path: "/ops/"
       Policies:
         - PolicyName: !Sub "${AWS::StackName}BsLogs"
           PolicyDocument:
