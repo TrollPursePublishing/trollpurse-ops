@@ -67,6 +67,8 @@ Resources:
       
   UE4ContainerPipeline:
     Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - MassiveContainerBuilder
     Condition: BuildUE4Stuff
     Properties:
       TemplateURL: ue4/bootstrap-ue4-container-build.yml
