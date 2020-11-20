@@ -37,7 +37,7 @@ Parameters:
   GithubOrganization:
     Type: String
     Description: The owner of the repository of the docker build.
-    Default: trollpursepublishing
+    Default: TrollPursePublishing
   GithubAccessToken:
     Type: String
     Description: Needed to pull changes from Github (no webhook)
@@ -50,39 +50,37 @@ Parameters:
 Mappings: 
   RegionMap: 
     eu-north-1: 
-      HVM64: ami-0d3968ec4e235e0a1
+      HVM64: ami-0d365da7a0e121309 #Windows Server 2019 Base
     ap-south-1: 
-      HVM64: ami-020d5d26350c17069
+      HVM64: ami-0994975f92b8520bc #Windows Server 2019 Base
     eu-west-3: 
-      HVM64: ami-07aee4f2846e5cf04
+      HVM64: ami-0fb40ac716767a2ee #Windows Server 2019 Base
     eu-west-2:
-      HVM64: ami-0e7f0745d52979126
+      HVM64: ami-023b643326f4d6eff #Windows Server 2019 Base
     eu-west-1: 
-      HVM64: ami-0008603c05596a01f
-    ap-northeast-3: 
-      HVM64: ami-0b8d76b796975015c
+      HVM64: ami-065a15cef040336bf #Windows Server 2019 Base
     ap-northeast-2: 
-      HVM64: ami-0633dd6a4c6881fd4
+      HVM64: ami-05d56404106a1706c #Windows Server 2019 Base
     ap-northeast-1: 
-      HVM64: ami-0793bd62a98481bc7
+      HVM64: ami-0feef1943a971f00e #Windows Server 2019 Base
     sa-east-1: 
-      HVM64: ami-062f6ab8022513369
+      HVM64: ami-0c5f3215703349e96 #Windows Server 2019 Base
     ca-central-1: 
-      HVM64: ami-0313d717e3c33049f
+      HVM64: ami-088ba3e5460a63e7a #Windows Server 2019 Base
     ap-southeast-1: 
-      HVM64: ami-0c7d228aebc0fb621
+      HVM64: ami-0e5035da109917399 #Windows Server 2019 Base
     ap-southeast-2: 
-      HVM64: ami-0196e690fc8d87c58
+      HVM64: ami-0f783075765a8d1c5 #Windows Server 2019 Base
     eu-central-1: 
-      HVM64: ami-07449593168be85e5
+      HVM64: ami-0075b084561781ea8 #Windows Server 2019 Base
     us-east-1: 
-      HVM64: ami-02a172b0393352993
+      HVM64: ami-02b5cd5aa444bee23 #Windows Server 2019 Base
     us-east-2: 
-      HVM64: ami-002211350933f93e9
+      HVM64: ami-056f139b85f494248 #Windows Server 2019 Base
     us-west-1: 
-      HVM64: ami-034db65b37f87170d
+      HVM64: ami-0f98ff6e3a7e950b8 #Windows Server 2019 Base
     us-west-2: 
-      HVM64: ami-0f82baff671697331
+      HVM64: ami-0d28bf0201017ce45 #Windows Server 2019 Base
 
 Resources:
   WindowsContainerPipeline:
