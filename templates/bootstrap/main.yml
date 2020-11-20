@@ -63,6 +63,7 @@ Resources:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
         GithubAccessToken: !Ref GithubPrivateAccessToken
+        BuilderCustomerActionName: MassiveContainerBuilder
       
   UE4ContainerPipeline:
     Type: AWS::CloudFormation::Stack
@@ -77,9 +78,7 @@ Resources:
         UE4GithubUsername: !Ref UE4GithubUsername
         UE4GithubPrivateAccessToken: !Ref UE4GithubPrivateAccessToken
         GithubAccessToken: !Ref GithubPrivateAccessToken
-        CustomActionProviderVersion:
-          Fn::ImportValue:
-            !Sub "${MassiveContainerBuilder.Outputs.FatContainerBuilderName}-LatestVersion"
+        CustomActionProviderVersion: !ImportValue "MassiveContainerBuilder-LatestVersion"
 Outputs:
   DockerImageRepository:
     Description: Uri for ECR to be used for codebuild custom containers.

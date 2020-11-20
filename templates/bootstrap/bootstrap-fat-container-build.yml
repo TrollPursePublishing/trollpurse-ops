@@ -33,10 +33,10 @@ Parameters:
     Type: String
     Description: Needed to pull changes from Github (no webhook)
     NoEcho: true
-Outputs:
-  FatContainerBuilderName:
-    Description: Custom Action Provider Name
-    Value: MassiveContainerBuilder
+  BuilderCustomerActionName:
+    Type: String
+    Description: The name of the custom action
+    Default: MassiveContainerBuilder
 
 Resources:
   LambdaDeployWaitHandle:
@@ -59,7 +59,7 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: "aws/codebuild/standard:4.0"
         EnvironmentVariables:
-          - Value: MassiveContainerBuilder
+          - Value: !Ref BuilderCustomerActionName
             Name: PROVIDER_NAME
           - Value: !Ref LambdaDeployWaitHandle
             Name: SIGNAL_URL
@@ -126,7 +126,7 @@ Resources:
         EnvironmentVariables:
           - Value: !Ref PackageArtifactBucketName
             Name: TEMPLATE_BUCKET
-          - Value: MassiveContainerBuilder
+          - Value: !Ref BuilderCustomerActionName
             Name: PROVIDER_NAME
           - Value: !Ref LambdaDeployWaitHandle
             Name: SIGNAL_URL
