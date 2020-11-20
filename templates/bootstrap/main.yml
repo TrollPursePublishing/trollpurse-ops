@@ -80,7 +80,6 @@ Resources:
         UE4GithubUsername: !Ref UE4GithubUsername
         UE4GithubPrivateAccessToken: !Ref UE4GithubPrivateAccessToken
         GithubAccessToken: !Ref GithubPrivateAccessToken
-        CustomActionProviderVersion: !ImportValue "LargeWindowsContainerBuilder-LatestVersion"
 Outputs:
   DockerImageRepository:
     Description: Uri for ECR to be used for codebuild custom containers.

@@ -6,9 +6,6 @@ Parameters:
   CustomActionProviderName:
     Type: String
     Description: Name of the custom action provider (used in CodePipeline Console UI).
-  CustomActionProviderVersion:
-    Type: String
-    Description: Version of the custom action provider (used in CodePipeline Console UI).
   DockerImageRepository:
     Type: String
     Description: Uri to the docker repository
@@ -117,7 +114,9 @@ Resources:
               Owner: Custom
               Category: Build
               Provider: !Ref CustomActionProviderName
-              Version: !Ref CustomActionProviderVersion
+              Version:
+                Fn::ImportValue:
+                  !Sub "${CustomActionProviderName}-LatestVersion"
             Configuration:
               ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
               InstanceType: m5.xlarge
