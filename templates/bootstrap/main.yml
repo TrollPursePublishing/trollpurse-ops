@@ -72,12 +72,14 @@ Resources:
       Parameters:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CustomActionProviderName: !GetAtt MassiveContainerBuilder.Outputs.FatContainerBuilderName
-        CustomActionProviderVersion: "1"
         DockerImageRepository: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"
         ArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketName
         UE4GithubUsername: !Ref UE4GithubUsername
         UE4GithubPrivateAccessToken: !Ref UE4GithubPrivateAccessToken
         GithubAccessToken: !Ref GithubPrivateAccessToken
+        CustomActionProviderVersion:
+          Fn::ImportValue:
+            !Sub "${MassiveContainerBuilder.Outputs.FatContainerBuilderName}-LatestVersion"
 Outputs:
   DockerImageRepository:
     Description: Uri for ECR to be used for codebuild custom containers.
