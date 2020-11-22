@@ -219,7 +219,7 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
-                StackName: !Sub "${AWS::StackName}FCB"
+                StackName: !Ref BuilderCustomerActionName
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt CloudFormationDeployRole.Arn
                 TemplatePath: 'TemplateOutput::container-builder/main.yml'
