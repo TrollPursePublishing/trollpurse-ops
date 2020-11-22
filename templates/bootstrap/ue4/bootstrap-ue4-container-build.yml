@@ -71,7 +71,7 @@ Mappings:
     eu-central-1: 
       HVM64: ami-0075b084561781ea8 #Windows Server 2019 Base
     us-east-1: 
-      HVM64: ami-032c2c4b952586f02 #Windows Server 2019 Full Base
+      HVM64: ami-07d936ac034ac2526 #Windows Server 2019 Core Container
     us-east-2: 
       HVM64: ami-056f139b85f494248 #Windows Server 2019 Base
     us-west-1: 
