@@ -63,7 +63,7 @@ Resources:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
         GithubAccessToken: !Ref GithubPrivateAccessToken
-        BuilderCustomerActionName: LargeWindowsContainerBuilder
+        BuilderCustomerActionName: MassiveWindowsContainerBuilder
       
   UE4ContainerPipeline:
     Type: AWS::CloudFormation::Stack
@@ -74,7 +74,7 @@ Resources:
       TemplateURL: ue4/bootstrap-ue4-container-build.yml
       Parameters:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
-        CustomActionProviderName: LargeWindowsContainerBuilder
+        CustomActionProviderName: MassiveWindowsContainerBuilder
         DockerImageRepository: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"
         ArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketName
         UE4GithubUsername: !Ref UE4GithubUsername
