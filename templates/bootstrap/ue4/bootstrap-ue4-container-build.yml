@@ -120,6 +120,7 @@ Resources:
             Configuration:
               ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
               InstanceType: m5.xlarge
+              Timeout: '28800'
               Command: !Sub "build-and-publish-ue4-minimal-docker-image.ps1 -accountId ${AWS::AccountId} -region ${AWS::Region} -repositoryName ${DockerImageRepository}/ue4-full:${UE4EngineVersion} -engineVersion ${UE4EngineVersion} -ue4GitUsername ${UE4GithubUsername} -ue4GitPersonalAccessToken ${UE4GithubPrivateAccessToken}"
             InputArtifacts:
               - Name: SourceOutput
