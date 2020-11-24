@@ -56,6 +56,8 @@ Once you execute the cloud formation script for "custom" projects, simply add a 
 
 This project has a 3-step deployment phase. The first step is to bootstrap, this will create a build project for this repo so you will get the latest updates (you can point it to a fork to keep control of costs). The second step is to create pipelines for each of your projects.
 
+> __About Roles__ For the most part, the roles and access granted and enabled is typically scoped to the _/ops/_ path. This includes access control policies and IAM role policy documents.
+
 ### Phase One - Bootstrap Part A
 
 Create a build project for this project. This will create packaged cloudformation scripts and magic links for the next phases.

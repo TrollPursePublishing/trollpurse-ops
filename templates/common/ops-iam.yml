@@ -7,10 +7,6 @@ Parameters:
   ClientDownloadBucketArn:
     Type: String
     Description: Bucket ARN where the final client build is stored.
-  CodeBuildImageEcrArn:
-    Type: String
-    Description: ECR ARN where codebuild build images are stored.
-
 Outputs:
   CodeBuildRoleArn:
     Description: ARN for the CodeBuild role, enables logging, ECR access, and access to artifacts
@@ -64,8 +60,7 @@ Resources:
                   - ecr:UploadLayerPart
                   - ecr:CompleteLayerUpload
                 Resource:
-                  - !Ref CodeBuildImageEcrArn
-                  - !Sub "${CodeBuildImageEcrArn}/*"
+                  - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ops/*"
               - Effect: Allow
                 Action:
                   - 'iam:GetRole'
@@ -154,8 +149,7 @@ Resources:
                     - "ecr:UploadLayerPart"
                     - "ecr:CompleteLayerUpload"
                   Resource:
-                    - !Ref CodeBuildImageEcrArn
-                    - !Sub "${CodeBuildImageEcrArn}/*"
+                    - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ops/*"
           - PolicyName: !Sub "${AWS::StackName}ECRBuildLogs"
             PolicyDocument:
               Version: "2012-10-17"
@@ -190,7 +184,7 @@ Resources:
                     - "ecr:BatchGetImage"
                     - "ecr:BatchCheckLayerAvailability"
                   Resource:
-                    - !Ref CodeBuildImageEcrArn
+                    - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ops/*"
           - PolicyName: !Sub "${AWS::StackName}BuildLogs"
             PolicyDocument:
               Version: "2012-10-17"

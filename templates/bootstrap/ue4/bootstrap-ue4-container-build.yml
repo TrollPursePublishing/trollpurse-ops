@@ -121,6 +121,6 @@ Resources:
               ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
               InstanceType: c5.4xlarge
               Timeout: '28800'
-              Command: !Sub "build-and-publish-ue4-minimal-docker-image.ps1 -accountId ${AWS::AccountId} -region ${AWS::Region} -repositoryName ${DockerImageRepository}/ -engineVersion ${UE4EngineVersion} -ue4GitUsername ${UE4GithubUsername} -ue4GitPersonalAccessToken ${UE4GithubPrivateAccessToken}"
+              Command: !Sub "build-and-publish-ue4-minimal-docker-image.ps1 -accountId ${AWS::AccountId} -region ${AWS::Region} -repositoryName ${DockerImageRepository} -engineVersion ${UE4EngineVersion} -ue4GitUsername ${UE4GithubUsername} -ue4GitPersonalAccessToken ${UE4GithubPrivateAccessToken}"
             InputArtifacts:
               - Name: SourceOutput

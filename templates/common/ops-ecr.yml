@@ -1,5 +1,9 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Defines Default IAM roles if you allow the CloudFormation Template to create IAM roles for you.
+Parameters:
+  RepositoryName:
+    Type: String
+    Description: The name of the repository. Will be scoped to /ops/
 Resources:
   CodeBuildECR:
     Type: AWS::ECR::Repository
@@ -7,18 +11,30 @@ Resources:
     UpdateReplacePolicy: 'Retain'
     Properties: 
       ImageTagMutability: IMMUTABLE
-      RepositoryName: 'ops-images'
+      RepositoryName: !Sub "ops/${RepositoryName}"
       RepositoryPolicyText: 
         Version: "2012-10-17"
         Statement: 
-          - Sid: AllowPushPull
+          - Sid: AllowRolesPushPull
             Effect: Allow
-            Principal: 
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/ops/*"
+            Action:
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:PutImage"
+              - "ecr:InitiateLayerUpload"
+              - "ecr:UploadLayerPart"
+              - "ecr:CompleteLayerUpload"
+          - Sid: AllowServicesPushPull
+            Effect: Allow
+            Principal:
               Service:
                 - codedeploy.amazonaws.com
                 - codepipeline.amazonaws.com
                 - codebuild.amazonaws.com
-                - ec2.amazonaws.com #TODO: this should be more fine grained, needed to support the fat container builder
             Action: 
               - "ecr:GetDownloadUrlForLayer"
               - "ecr:BatchGetImage"
@@ -34,3 +50,8 @@ Outputs:
   RepositoryArn:
     Description: The ARN of the repository
     Value: !GetAtt CodeBuildECR.Arn
+  RepositoryURI:
+    Description: The full URI to the repository
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${RepositoryName}"
+    Export:
+      Name: !Sub "${AWS::StackName}-RepoURI"

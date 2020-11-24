@@ -12,6 +12,9 @@ Parameters:
     Type: String
     Description: Token needed to access repository.
     NoEcho: true
+  ECRStackName:
+    Type: String
+    Description: The stack name containing the exported repo uri for the build image.
   GithubReleaseBranch:
     Type: String
     Description: Branch to build for releases
@@ -56,7 +59,6 @@ Resources:
       Parameters:
         ArtifactStoreBucketArn: !GetAtt Storage.Outputs.ArtifactStoreBucketArn
         ClientDownloadBucketArn: !GetAtt Storage.Outputs.ClientDownloadBucketArn
-        CodeBuildImageEcrArn: !ImportValue OpsEcrArn
 
   BuildProject:
     Type: AWS::CloudFormation::Stack
@@ -67,9 +69,11 @@ Resources:
         ProjectEnvironmentImageName:
           !Join
             - ''
-            - - !ImportValue DockerRepository
+            - - Fn::ImportValue:
+                  !Sub "${ECRStackName}-RepoURI"
               - "/ue4-full:"
               - !Ref EngineVersion
+              - "-ltsc2019"
 
   Pipeline:
     Type: AWS::CloudFormation::Stack

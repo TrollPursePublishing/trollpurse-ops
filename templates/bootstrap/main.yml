@@ -40,6 +40,8 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ../common/ops-ecr.yml
+      Parameters:
+        RepositoryName: ue4-full
   
   PipelineRoles:
     Type: AWS::CloudFormation::Stack
@@ -75,19 +77,8 @@ Resources:
       Parameters:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CustomActionProviderName: MassiveWindowsContainerBuilder
-        DockerImageRepository: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"
+        DockerImageRepository: !GetAtt ContainerRepository.Outputs.RepositoryURI
         ArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketName
         UE4GithubUsername: !Ref UE4GithubUsername
         UE4GithubPrivateAccessToken: !Ref UE4GithubPrivateAccessToken
         GithubAccessToken: !Ref GithubPrivateAccessToken
-Outputs:
-  DockerImageRepository:
-    Description: Uri for ECR to be used for codebuild custom containers.
-    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerRepository.Outputs.RepositoryName}"
-    Export:
-      Name: DockerImageRepository
-  EcrArn:
-    Description: Arn for repository containing custom build images meant for codebuild.
-    Value: !GetAtt ContainerRepository.Outputs.RepositoryArn
-    Export:
-      Name: OpsEcrArn
