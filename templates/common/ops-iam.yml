@@ -59,6 +59,7 @@ Resources:
                   - ecr:InitiateLayerUpload
                   - ecr:UploadLayerPart
                   - ecr:CompleteLayerUpload
+                  - ecr:GetAuthorizationToken
                 Resource:
                   - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ops/*"
               - Effect: Allow
@@ -148,6 +149,7 @@ Resources:
                     - "ecr:InitiateLayerUpload"
                     - "ecr:UploadLayerPart"
                     - "ecr:CompleteLayerUpload"
+                    - "ecr:GetAuthorizationToken"
                   Resource:
                     - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ops/*"
           - PolicyName: !Sub "${AWS::StackName}ECRBuildLogs"
@@ -183,6 +185,7 @@ Resources:
                     - "ecr:GetDownloadUrlForLayer"
                     - "ecr:BatchGetImage"
                     - "ecr:BatchCheckLayerAvailability"
+                    - "ecr:GetAuthorizationToken"
                   Resource:
                     - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ops/*"
           - PolicyName: !Sub "${AWS::StackName}BuildLogs"

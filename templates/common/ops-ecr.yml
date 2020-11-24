@@ -15,19 +15,6 @@ Resources:
       RepositoryPolicyText: 
         Version: "2012-10-17"
         Statement: 
-          - Sid: AllowRolesPushPull
-            Effect: Allow
-            Principal:
-              AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/ops/*"
-            Action:
-              - "ecr:GetDownloadUrlForLayer"
-              - "ecr:BatchGetImage"
-              - "ecr:BatchCheckLayerAvailability"
-              - "ecr:PutImage"
-              - "ecr:InitiateLayerUpload"
-              - "ecr:UploadLayerPart"
-              - "ecr:CompleteLayerUpload"
           - Sid: AllowServicesPushPull
             Effect: Allow
             Principal:
@@ -35,6 +22,7 @@ Resources:
                 - codedeploy.amazonaws.com
                 - codepipeline.amazonaws.com
                 - codebuild.amazonaws.com
+                - ec2.amazonaws.com
             Action: 
               - "ecr:GetDownloadUrlForLayer"
               - "ecr:BatchGetImage"

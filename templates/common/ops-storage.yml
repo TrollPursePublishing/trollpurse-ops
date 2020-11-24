@@ -62,7 +62,6 @@ Resources:
             Principal:
               AWS:
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/ops/*"
-                - !Sub "arn:aws:iam::${AWS::AccountId}:assumed-role/ops/*"
             Action: 
               - 's3:GetObject'
               - 's3:GetObjectVersion'
