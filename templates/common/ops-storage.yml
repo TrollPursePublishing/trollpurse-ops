@@ -28,6 +28,11 @@ Resources:
                  SSEAlgorithm: AES256
   ClientDownloadBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F16
+            reason: "Principal * is for role matching on /ops/ path"
     Properties:
       Bucket: !Ref ClientDownloadBucket
       PolicyDocument:
@@ -91,6 +96,11 @@ Resources:
 
   ArtifactStoreBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F16
+            reason: "Principal * is for role matching on /ops/ path"
     Properties:
       Bucket: !Ref ArtifactStoreBucket
       PolicyDocument:
