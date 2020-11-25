@@ -59,7 +59,6 @@ Resources:
       Parameters:
         ArtifactStoreBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketArn
         ClientDownloadBucketArn: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketArn
-        CodeBuildImageEcrArn: !GetAtt ContainerRepository.Outputs.RepositoryArn
       
   MassiveContainerBuilder:
     Type: AWS::CloudFormation::Stack
