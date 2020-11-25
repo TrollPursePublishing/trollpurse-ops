@@ -28,11 +28,6 @@ Resources:
                  SSEAlgorithm: AES256
   ClientDownloadBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: F16
-            reason: "Principal * is for role matching on /ops/ path"
     Properties:
       Bucket: !Ref ClientDownloadBucket
       PolicyDocument:
@@ -61,7 +56,7 @@ Resources:
             Effect: Allow
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/ops/*"
+                - !Sub "${AWS::AccountId}"
             Action: 
               - 's3:GetObject'
               - 's3:GetObjectVersion'
@@ -95,11 +90,6 @@ Resources:
 
   ArtifactStoreBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: F16
-            reason: "Principal * is for role matching on /ops/ path"
     Properties:
       Bucket: !Ref ArtifactStoreBucket
       PolicyDocument:
@@ -125,7 +115,7 @@ Resources:
               - !GetAtt ArtifactStoreBucket.Arn
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/ops/*"
+                - !Sub "${AWS::AccountId}"
           - Sid: DenyNonPipelineServiceMutations
             Effect: Allow
             Action:
