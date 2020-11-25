@@ -184,6 +184,9 @@ Resources:
   
   FatContainerBuilderPipeline:
     Type: 'AWS::CodePipeline::Pipeline'
+    DependsOn:
+      - FatContainerBuilderLogGroup
+      - LambdaDeployedSignalLogGroup
     Properties:
       Name: !Sub '${AWS::StackName}FCBPipeline'
       RoleArn: !Ref CodePipelineRoleArn

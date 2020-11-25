@@ -243,6 +243,8 @@ Resources:
 
   BootstrapPipeline:
     Type: 'AWS::CodePipeline::Pipeline'
+    DependsOn:
+      - BootstrapCodeBuildProjectLogGroup
     Properties:
       Name: !Sub '${AWS::StackName}Pipeline'
       RoleArn: !GetAtt CodePipelineServiceRole.Arn

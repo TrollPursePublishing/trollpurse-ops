@@ -6,6 +6,7 @@ phases:
     commands:
       - pip install --upgrade pip
       - pip install --upgrade awscli
+      - pip install cfn-lint
       - apt-get update
       - apt-get -y install ruby-full
       - apt-get -y install jq
@@ -14,6 +15,7 @@ phases:
     commands:
       - echo "Template Bucket Package Location is $TEMPLATE_BUCKET"
       - mkdir ${CODEBUILD_SRC_DIR}/package
+      - cfn-lint -t **/*.yml
       - find ${CODEBUILD_SRC_DIR}/templates -name '*.yml' -print0 -or -name '*.yaml' -print0 | xargs -0 -I {file} sh -c 'echo Validating {file}; aws cloudformation validate-template --template-body file://{file}'
       - cfn_nag_scan --input-path ${CODEBUILD_SRC_DIR}/templates/
   build:
