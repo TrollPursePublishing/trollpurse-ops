@@ -66,6 +66,9 @@ Create a build project for this project. This will create packaged cloudformatio
 aws cloudformation deploy --template-file ./templates/bootstrap/bootstrap-self.yml --capabilities CAPABILITY_NAMED_IAM --stack-name OpsBuild --parameter-overrides "OAuthToken={Your GitHub Personal Access Token}"
 ```
 
+> __Note__ The stack creation should only take a few minutes. After which, a CodeBuild project will kick off providing this repository's templates packaged in a convenient manner. This is what the Exports in CloudFormation reference
+
+
 After the build succeeds you may opt out of automatically keeping templates up to date by destroying the stack. The s3 bucket created to store the CloudFormation scripts for the Magic Links are set to 'Retain' and thus still available after the stack is deleted. Keep in mind you may need to save the links from the script shown in Phase Two before deleting the stack.
 
 ```bash

@@ -125,7 +125,7 @@ Resources:
   BootstrapCodeBuildProjectLogGroup:
     Type: AWS::Logs::LogGroup
     Properties: 
-      LogGroupName: !Sub "/aws/ssm/${BootstrapCodeBuildProject}"
+      LogGroupName: !Sub "/aws/codebuild/${BootstrapCodeBuildProject}"
       RetentionInDays: 7
 
   BootstrapRole:

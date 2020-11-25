@@ -134,7 +134,7 @@ Resources:
   FatContainerBuilderLogGroup:
     Type: AWS::Logs::LogGroup
     Properties: 
-      LogGroupName: !Sub "/aws/ssm/${FatContainerBuilder}"
+      LogGroupName: !Sub "/aws/codebuild/${FatContainerBuilder}"
       RetentionInDays: 7
         
   CloudFormationDeployRole:
