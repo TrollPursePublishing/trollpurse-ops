@@ -61,3 +61,9 @@ Resources:
         Image: !Ref ProjectEnvironmentImageName
         ImagePullCredentialsType: !Ref ImageCredentials
       TimeoutInMinutes: 60
+
+  BuildProjectLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/ssm/${BuildProject}"
+      RetentionInDays: 7

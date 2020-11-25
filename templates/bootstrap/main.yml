@@ -22,6 +22,14 @@ Parameters:
     Description: Only needed if UnrealEngine4Support is selected. The private access token needed to build the ue4 source container
     Default: "N/A"
     NoEcho: true
+  CustomActionProviderName:
+    Type: String
+    Description: Name of the custom action provider.
+    Default: WindowsLargeDockerBuilder
+  CustomActionProviderVersion:
+    Type: Number
+    Description: Version of the custom action provider.
+    Default: 1
 Conditions:
   BuildUE4Stuff:
     !Equals [ !Ref BuildConfiguration, UnrealEngine4Support ]
@@ -65,7 +73,7 @@ Resources:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
         GithubAccessToken: !Ref GithubPrivateAccessToken
-        BuilderCustomerActionName: MassiveWindowsContainerBuilder
+        BuilderCustomerActionName: !Ref CustomActionProviderName
       
   UE4ContainerPipeline:
     Type: AWS::CloudFormation::Stack
@@ -76,7 +84,8 @@ Resources:
       TemplateURL: ue4/bootstrap-ue4-container-build.yml
       Parameters:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
-        CustomActionProviderName: MassiveWindowsContainerBuilder
+        CustomActionProviderName: !Ref CustomActionProviderName
+        CustomActionProviderVersion: !Ref CustomActionProviderVersion
         DockerImageRepository: !GetAtt ContainerRepository.Outputs.RepositoryURI
         ArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketName
         UE4GithubUsername: !Ref UE4GithubUsername

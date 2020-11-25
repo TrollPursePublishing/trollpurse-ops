@@ -130,9 +130,17 @@ Resources:
             Name: PROVIDER_NAME
           - Value: !Ref LambdaDeployWaitHandle
             Name: SIGNAL_URL
+            
+  FatContainerBuilderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/ssm/${FatContainerBuilder}"
+      RetentionInDays: 7
         
   CloudFormationDeployRole:
     Type: 'AWS::IAM::Role'
+    DeletionPolicy: Retain #Retain because the cloudformation spawned from the pipeline needs this in order to be deleted
+    UpdateReplacePolicy: Retain
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -146,6 +154,7 @@ Resources:
         - arn:aws:iam::aws:policy/IAMFullAccess
         - arn:aws:iam::aws:policy/AWSLambda_FullAccess
         - arn:aws:iam::aws:policy/CloudWatchEventsFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
         - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
         - arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess
         - arn:aws:iam::aws:policy/AmazonSSMFullAccess

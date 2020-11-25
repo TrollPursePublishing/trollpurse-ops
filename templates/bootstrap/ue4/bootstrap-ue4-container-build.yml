@@ -5,7 +5,11 @@ Description: Windows Server container CI/CD pipeline for UE4 container builds
 Parameters: 
   CustomActionProviderName:
     Type: String
-    Description: Name of the custom action provider (used in CodePipeline Console UI).
+    Description: Name of the custom action provider.
+  CustomActionProviderVersion:
+    Type: Number
+    Description: Version of the custom action provider.
+    Default: 1
   DockerImageRepository:
     Type: String
     Description: Uri to the docker repository
@@ -114,9 +118,7 @@ Resources:
               Owner: Custom
               Category: Build
               Provider: !Ref CustomActionProviderName
-              Version:
-                Fn::ImportValue:
-                  !Sub "${CustomActionProviderName}-LatestVersion"
+              Version: !Ref CustomActionProviderVersion
             Configuration:
               ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
               InstanceType: c5.4xlarge

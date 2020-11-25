@@ -122,6 +122,12 @@ Resources:
         Type: CODEPIPELINE
       TimeoutInMinutes: 15
 
+  BootstrapCodeBuildProjectLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/ssm/${BootstrapCodeBuildProject}"
+      RetentionInDays: 7
+
   BootstrapRole:
     Type: "AWS::IAM::Role"
     Properties:
