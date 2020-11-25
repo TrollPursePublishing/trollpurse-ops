@@ -74,7 +74,14 @@ Resources:
             build:
               commands:
                 - 'curl -X PUT -H ''Content-Type:'' --data-binary ''{"Status":"SUCCESS","Reason":"Custom Action Deployed","UniqueId":"${PROVIDER_NAME}","Data":"Application has completed configuration."}'' "${SIGNAL_URL}"'
-        
+
+  LambdaDeployedSignalLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/codebuild/${LambdaDeployedSignal}"
+      RetentionInDays: 7
+
+
   FatContainerBuilder:
     Type: "AWS::CodeBuild::Project"
     Properties:
