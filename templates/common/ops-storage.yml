@@ -95,6 +95,27 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
+          - Sid: DenyNonPipelineRoleMutations
+            Effect: Allow
+            Action:
+              - 's3:PutObject'
+              - 's3:PutObjectAcl'
+              - 's3:PutObjectVersionAcl'
+              - 's3:DeleteObject'
+              - 's3:DeleteObjectVersion'
+              - 's3:DeleteObjectVersionTagging'
+              - 's3:DeleteBucket'
+              - 's3:GetObject'
+              - 's3:GetObjectVersion'
+            Resource: 
+              - !Join
+                - ''
+                - - !GetAtt ArtifactStoreBucket.Arn
+                  - /*
+              - !GetAtt ArtifactStoreBucket.Arn
+            Principal:
+              AWS:
+                - !Sub "${AWS::AccountId}"
           - Sid: DenyNonPipelineServiceMutations
             Effect: Allow
             Action:
