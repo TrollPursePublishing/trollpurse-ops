@@ -46,7 +46,7 @@ Parameters:
   UE4EngineVersion:
     Type: String
     Description: The version of the engine to build.
-    Default: "4.25.4"
+    Default: "4.25.3"
 
 Mappings: 
   RegionMap: 
@@ -112,7 +112,7 @@ Resources:
               PollForSourceChanges: true
         - Name: Package
           Actions:
-          - Name: BuildPublishUE4Full
+          - Name: BuildPublishUE4FullWindows
             RunOrder: 1
             ActionTypeId:
               Owner: Custom
