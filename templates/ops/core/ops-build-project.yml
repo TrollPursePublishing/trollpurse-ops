@@ -20,20 +20,13 @@ Parameters:
       - BUILD_GENERAL1_SMALL
       - BUILD_GENERAL1_MEDIUM
       - BUILD_GENERAL1_LARGE
+      - BUILD_GENERAL1_2XLARGE
     Default: BUILD_GENERAL1_MEDIUM
       
   ProjectEnvironmentImageName:
     Type: String
     Description: The image to use for the build
     Default: "aws/codebuild/windows-base:2019-1.0"
-    
-  ImageCredentials:
-    Type: String
-    ConstraintDescription: "Must be either SERVICE_ROLE or CODEBUILD. If using a non-AWS docker image, use SERVICE_ROLE"
-    AllowedValues:
-      - SERVICE_ROLE
-      - CODEBUILD
-    Default: CODEBUILD
 
   BuildRoleArn:
     Type: String
@@ -59,7 +52,7 @@ Resources:
         Type: !Ref ProjectEnvironmentType
         ComputeType: !Ref ProjectEnvironmentComputeType
         Image: !Ref ProjectEnvironmentImageName
-        ImagePullCredentialsType: !Ref ImageCredentials
+        ImagePullCredentialsType: CODEBUILD
       TimeoutInMinutes: 60
 
   BuildProjectLogGroup:

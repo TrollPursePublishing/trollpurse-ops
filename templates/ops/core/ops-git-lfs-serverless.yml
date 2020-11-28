@@ -1,115 +1,115 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Parameters:
-    GithubOrganization:
-        Type: String
-        Description: Name of the organization on Github for access
-    GithubRepositoryName:
-        Type: String
-        Description: Name of the repository this lfs configuration.
+  GithubOrganization:
+    Type: String
+    Description: Name of the organization on Github for access
+  GithubRepositoryName:
+    Type: String
+    Description: Name of the repository this lfs configuration.
 Outputs:
-    LfsEndpoint:
-        Description: The Git LFS endpoint to use in your .lfsconfig
-        Value: !Sub 'https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/lfs'
+  LfsEndpoint:
+    Description: The Git LFS endpoint to use in your .lfsconfig
+    Value: !Sub 'https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/lfs'
 Resources:
-    StorageBucket:
-        Type: AWS::S3::Bucket
-        DeletionPolicy: Retain
-        UpdateReplacePolicy: Retain
+  StorageBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
 
-    RestApi:
-        Type: AWS::ApiGateway::RestApi
-        Properties:
-            Body:
-                swagger: '2.0'
-                info:
-                    description: 'Describes a proxy to a Lambda function to support a serverless Git LFS server.'
-                    title: 'Git LFS REST API'
-                version: '1.0.0'
-                paths:
-                    /{proxy+}:
-                        x-amazon-apigateway-any-method:
-                            produces:
-                                - application/json
-                            parameters:
-                                - name: proxy
-                                  in: path
-                                  required: true
-                                  type: string
-                            responses: {}
-                            x-amazon-apigateway-integration:
-                                responses:
-                                    default:
-                                        statusCode: 200
-                                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SigningLambda}/invocations'
-                                passthroughBehavior: when_no_match
-                                httpMethod: POST
-                                contentHandling: CONVERT_TO_TEXT
-                                type: aws_proxy
-            Description: Git LFS endpoint
-            FailOnWarnings: true
-            Name: !Ref AWS::StackName
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Body:
+        swagger: '2.0'
+        info:
+          description: 'Describes a proxy to a Lambda function to support a serverless Git LFS server.'
+          title: 'Git LFS REST API'
+        version: '1.0.0'
+        paths:
+          /{proxy+}:
+            x-amazon-apigateway-any-method:
+              produces:
+                - application/json
+              parameters:
+                - name: proxy
+                  in: path
+                  required: true
+                  type: string
+              responses: {}
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: 200
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SigningLambda}/invocations'
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                contentHandling: CONVERT_TO_TEXT
+                type: aws_proxy
+      Description: Git LFS endpoint
+      FailOnWarnings: true
+      Name: !Ref AWS::StackName
 
-    RestDeployment:
-        Type: AWS::ApiGateway::Deployment
-        Properties:
-            RestApiId: !Ref RestApi
-            StageName: lfs
-    SigningLambda:
-        Type: AWS::Lambda::Function
-        Properties:
-            Code:
-                S3Bucket: !Sub 'ae-infrastructure-${AWS::Region}'
-                S3Key: git-lfs/3.0.0/Estranged.Lfs.Hosting.Lambda.zip
-            Description: Generates S3 signed URLs for Git LFS
-            FunctionName: !Ref AWS::StackName
-            Handler: Estranged.Lfs.Hosting.Lambda::Estranged.Lfs.Hosting.Lambda.LambdaEntryPoint::FunctionHandlerAsync
-            MemorySize: 512
-            Role: !GetAtt SigningLambdaRole.Arn
-            Runtime: dotnetcore3.1
-            Timeout: 30
-            Environment:
-                Variables:
-                    LFS_BUCKET: !Ref StorageBucket
-                    GITHUB_ORGANISATION: !Ref GithubOrganization
-                    GITHUB_REPOSITORY: !Ref GithubRepositoryName
-    SigningLambdaGatewayPermission:
-        Type: AWS::Lambda::Permission
-        Properties: 
-            Action: lambda:InvokeFunction
-            FunctionName: !GetAtt SigningLambda.Arn
-            Principal: apigateway.amazonaws.com
-            SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*
-    SigningLambdaRole:
-        Type: AWS::IAM::Role
-        Properties:
-            AssumeRolePolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                - 
-                    Effect: Allow
-                    Principal:
-                        Service:
-                            - lambda.amazonaws.com
-                    Action:
-                        - sts:AssumeRole
-            ManagedPolicyArns:
-                - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-            Policies:
-              - PolicyName: "ManageLFS"
-                PolicyDocument:
-                  Version: "2012-10-17"
-                  Statement:
-                    - Effect: "Allow"
-                      Action:
-                        - "s3:*Object"
-                        - "s3:*Objects"
-                        - "s3:List*"
-                        - "s3:Get*"
-                        - "s3:AbortMultipartUpload"
-                      Resource:
-                        - !GetAtt StorageBucket.Arn
-                        - !Join
-                          - ''
-                          - - !GetAtt StorageBucket.Arn
-                            - '/*'
+  RestDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref RestApi
+      StageName: lfs
+  SigningLambda:
+      Type: AWS::Lambda::Function
+      Properties:
+        Code:
+          S3Bucket: !Sub 'ae-infrastructure-${AWS::Region}'
+          S3Key: git-lfs/3.0.0/Estranged.Lfs.Hosting.Lambda.zip
+        Description: Generates S3 signed URLs for Git LFS
+        FunctionName: !Ref AWS::StackName
+        Handler: Estranged.Lfs.Hosting.Lambda::Estranged.Lfs.Hosting.Lambda.LambdaEntryPoint::FunctionHandlerAsync
+        MemorySize: 512
+        Role: !GetAtt SigningLambdaRole.Arn
+        Runtime: dotnetcore3.1
+        Timeout: 30
+        Environment:
+          Variables:
+            LFS_BUCKET: !Ref StorageBucket
+            GITHUB_ORGANISATION: !Ref GithubOrganization
+            GITHUB_REPOSITORY: !Ref GithubRepositoryName
+  SigningLambdaGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties: 
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt SigningLambda.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*
+  SigningLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - 
+          Effect: Allow
+          Principal:
+            Service:
+                - lambda.amazonaws.com
+          Action:
+            - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: "ManageLFS"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:*Object"
+                  - "s3:*Objects"
+                  - "s3:List*"
+                  - "s3:Get*"
+                  - "s3:AbortMultipartUpload"
+                Resource:
+                  - !GetAtt StorageBucket.Arn
+                  - !Join
+                    - ''
+                    - - !GetAtt StorageBucket.Arn
+                      - '/*'
       

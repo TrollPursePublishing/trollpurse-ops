@@ -12,13 +12,16 @@ Parameters:
     Type: String
     Description: Token needed to access repository.
     NoEcho: true
-  ECRStackName:
-    Type: String
-    Description: The stack name containing the exported repo uri for the build image.
   GithubReleaseBranch:
     Type: String
     Description: Branch to build for releases
     Default: main
+  ECRStackName:
+    Type: String
+    Description: The stack name containing the exported repo uri for the build image.
+  NotificationEmailDistribution:
+    Type: String
+    Description: Email distribution to notify when builds have failed or succeeded
   CreateGitLfsServerless:
     Type: String
     AllowedValues:
@@ -30,10 +33,7 @@ Parameters:
   EngineVersion:
     Type: String
     Description: Version of Unreal Engine 4 to use.
-    Default: "4.25.4"
-  NotificationEmailDistribution:
-    Type: String
-    Description: Email distribution to notify when builds have failed or succeeded
+    Default: "4.25.3"
 Conditions:
   BuildGitLfsServerless:
     !Equals [ !Ref CreateGitLfsServerless, Yes ]
@@ -66,6 +66,7 @@ Resources:
       TemplateURL: ../core/ops-build-project.yml
       Parameters:
         BuildRoleArn: !GetAtt Roles.Outputs.CodeBuildRoleArn
+        ProjectEnvironmentType: WINDOWS_SERVER_2019_CONTAINER
         ProjectEnvironmentImageName:
           !Join
             - ''
@@ -89,7 +90,7 @@ Resources:
         CodePipelineRoleArn: !GetAtt Roles.Outputs.CodePipelineRoleArn
         ClientDownloadBucketName: !GetAtt Storage.Outputs.ClientDownloadBucketName
         ArtifactStoreBucketName: !GetAtt Storage.Outputs.ArtifactStoreBucketName
-        
+
 Outputs:
   LfsUri:
     Condition: BuildGitLfsServerless
