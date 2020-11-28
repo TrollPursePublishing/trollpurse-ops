@@ -78,6 +78,15 @@ aws cloudformation deploy --template-file ./templates/bootstrap/bootstrap-self.y
 
 ### Phase Two - Bootstrap Part B
 
+Create a CloudFormation Stack that will create storage resources, a CodePipeline project that will create another CloudFormation stack for building large containers on windows called `WindowsLargeDockerBuilder` (by default), as well as another CodePipeline pipeline for building Unreal Engine 4 containers for build pipelines (if configured).
+
+You can launch this stack following the Magic Links provided in the below script.
+
+```bash
+aws cloudformation --no-paginate list-exports --query "Exports[*].{Name:Name,Link:Value}"
+```
+
+The link to launch this phase is named `GlobalOps-GamePipelineMagicLink` if you used the default options.
 
 ### Phase Three - For Each New Project
 
