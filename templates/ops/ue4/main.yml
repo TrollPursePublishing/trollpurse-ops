@@ -94,7 +94,7 @@ Resources:
         GitHubSecret: !Ref GithubPersonalAccessToken
         NotificationEmailDistribution: !Ref NotificationEmailDistribution
         BuildProject: !GetAtt BuildProject.Outputs.ProjectName
-        CodePipelineRoleArn: !GetAtt Roles.Outputs.CodePipelineRoleArn
+        CodePipelineRoleArn: !GetAtt Roles.Outputs.CodePipelineServiceRoleArn
         ClientDownloadBucketName: !GetAtt Storage.Outputs.ClientDownloadBucketName
         ArtifactStoreBucketName: !GetAtt Storage.Outputs.ArtifactStoreBucketName
 
