@@ -65,6 +65,7 @@ Resources:
         PackageArtifactBucketName: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketName
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
+        GithubAccessToken: !Ref GithubPrivateAccessToken
   
   ContainerRepository:
     Type: AWS::CloudFormation::Stack
