@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Bootstrap template to configure automation of the large container builder custom action. This is a stack that deploys a stack form a github repository and will not complete until that does.
+Parameters:
+  BuildArtifactBucketName:
+    Type: String
+    Description: Ref to S3 Bucket for Target and Source S3 Bucket Arn for CodePipeline/Build Artifacts.
+  PackageArtifactBucketName:
+    Type: String
+    Description: S3 Bucket name for packaging stuff readable by CloudFormation.
+  CodePipelineRoleArn:
+    Type: String
+    Description: ARN for the executing code pipeline configuration
+  CodeBuildRoleArn:
+    Type: String
+    Description: ARN for the executing code build configuration.
+  BranchName:
+    Description: GitHub branch name for release builds
+    Type: String
+    Default: master
+  GithubRepositoryName:
+    Description: GitHub repository name. For example, my-website
+    Type: String
+    Default: "Estranged.Lfs"
+  GithubOrganization:
+    Type: String
+    Description: The owner of the repository. For an organization, it is the name of the organization
+    Default: TrollPursePublishing
+  GithubAccessToken:
+    Type: String
+    Description: Needed to pull changes from Github (no webhook)
+    NoEcho: true
+Outputs:
+  GitLfsFunctionObjectName:
+    Value: Estranged.Lfs.Hosting.Lambda.zip
+    Description: Name of the output artifact
+Resources:
+  GitLfsBuildProject:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      Name: !Sub "${AWS::StackName}-GLFS"
+      ServiceRole: !Ref CodeBuildRoleArn
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          
+          phases:
+            install:
+              runtime-versions:
+                dotnet: 3.1
+            pre_build:
+              commands:
+                - dotnet restore
+            build:
+              commands:
+                - dotnet build --configuration Release --no-restore
+            post_build:
+              commands:
+                - cp -R ./hosting/Estranged.Lfs.Hosting.Lambda/bin/Release/netcoreapp3.1 ./Estranged.Lfs.Hosting.Lambda
+          artifacts:
+            name: GitLfsFunctionOutput
+            files: '**/*'
+            discard-paths: no
+            base-directory: 'Estranged.Lfs.Hosting.Lambda'
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: "aws/codebuild/standard:4.0"
+
+  GitLfsBuildProjectLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/codebuild/${GitLfsBuildProject}"
+      RetentionInDays: 7
+
+  GitLfsBuildProjectPipeline:
+    Type: 'AWS::CodePipeline::Pipeline'
+    DependsOn: GitLfsBuildProjectLogGroup
+    Properties:
+      Name: !Sub '${AWS::StackName}GitLfsPipeline'
+      RoleArn: !Ref CodePipelineRoleArn
+      ArtifactStore:
+        Location: !Ref BuildArtifactBucketName
+        Type: S3
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: EstrangedLfsSource
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: "1"
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                Owner: !Ref GithubOrganization
+                Repo: !Ref GithubRepositoryName
+                Branch: !Ref BranchName
+                OAuthToken: !Ref GithubAccessToken
+                PollForSourceChanges: true
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: BuildLambdaFunction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: "1"
+                Provider: CodeBuild
+              OutputArtifacts:
+                - Name: GitLfsFunctionOutput
+              InputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                ProjectName: !Ref GitLfsBuildProject
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - Name: DeployLambdaFunction
+              InputArtifacts:
+                - Name: GitLfsFunctionOutput
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: S3
+              Configuration:
+                BucketName: !Ref PackageArtifactBucketName
+                Extract: false
+              RunOrder: 1
