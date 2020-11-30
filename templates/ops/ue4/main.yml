@@ -16,9 +16,10 @@ Parameters:
     Type: String
     Description: Branch to build for releases
     Default: main
-  ECRStackName:
+  BootstrapStackName:
     Type: String
     Description: The stack name containing the exported repo uri for the build image.
+    Default: GamePipelinesBootstrap
   NotificationEmailDistribution:
     Type: String
     Description: Email distribution to notify when builds have failed or succeeded
@@ -46,6 +47,12 @@ Resources:
       Parameters:
         GithubOrganization: !Ref GithubOrganization
         GithubRepositoryName: !Ref GithubRepositoryName
+        GitLfsFunctionBucketName:
+          Fn::ImportValue:
+            !Sub "${BootstrapStackName}-GitLfsFunctionBucket"
+        GitLfsFunctionObjectName:
+          Fn::ImportValue:
+            !Sub "${BootstrapStackName}-GitLfsFunctionObject"
 
   Storage:
     Type: AWS::CloudFormation::Stack
@@ -71,7 +78,7 @@ Resources:
           !Join
             - ''
             - - Fn::ImportValue:
-                  !Sub "${ECRStackName}-RepoURI"
+                  !Sub "${BootstrapStackName}-Ue4FullRepoUri"
               - "/ue4-full:"
               - !Ref EngineVersion
               - "-ltsc2019"

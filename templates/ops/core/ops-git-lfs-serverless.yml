@@ -6,6 +6,12 @@ Parameters:
   GithubRepositoryName:
     Type: String
     Description: Name of the repository this lfs configuration.
+  GitLfsFunctionBucketName:
+    Type: String
+    Description: The name of the bucket storing the lambda function
+  GitLfsFunctionObjectName:
+    Type: String
+    Description: The name of the object storing the lambda function
 Outputs:
   LfsEndpoint:
     Description: The Git LFS endpoint to use in your .lfsconfig
@@ -15,6 +21,11 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
 
   RestApi:
     Type: AWS::ApiGateway::RestApi
@@ -58,8 +69,8 @@ Resources:
       Type: AWS::Lambda::Function
       Properties:
         Code:
-          S3Bucket: !Sub 'ae-infrastructure-${AWS::Region}'
-          S3Key: git-lfs/3.0.0/Estranged.Lfs.Hosting.Lambda.zip
+          S3Bucket: !Ref GitLfsFunctionBucketName
+          S3Key: !Ref GitLfsFunctionObjectName
         Description: Generates S3 signed URLs for Git LFS
         FunctionName: !Ref AWS::StackName
         Handler: Estranged.Lfs.Hosting.Lambda::Estranged.Lfs.Hosting.Lambda.LambdaEntryPoint::FunctionHandlerAsync
@@ -95,7 +106,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: "ManageLFS"
+        - PolicyName: !Sub "${AWS::StackName}-ManageLFS"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:

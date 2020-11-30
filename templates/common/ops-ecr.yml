@@ -41,5 +41,4 @@ Outputs:
   RepositoryURI:
     Description: The full URI to the repository
     Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${CodeBuildECR}"
-    Export:
-      Name: !Sub "${AWS::StackName}-RepoURI"
+

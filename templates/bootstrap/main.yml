@@ -3,7 +3,6 @@ Parameters:
   BuildConfiguration:
     Type: String
     AllowedValues:
-      - DockerRepositoryOnly
       - MassiveContainerBuilder
       - UnrealEngine4Support
     Description: What support systems should be bootstrapped? UnrealEngine4Support implies MassiveContainerBuilder and DockerRepositoryOnly. MassiveContainerBuilder implies DockerRepositoryOnly.
@@ -34,17 +33,42 @@ Conditions:
     !Equals [ !Ref BuildConfiguration, UnrealEngine4Support ]
   BuildWindowsContainerStuff:
     !Or [!Equals [ !Ref BuildConfiguration, MassiveContainerBuilder ], Condition: BuildUE4Stuff ]
-  NeedsRolesAndArtifacts:
-    !Not [!Equals [!Ref BuildConfiguration, DockerRepositoryOnly] ]
+Outputs:
+  Ue4FullDockerRepositoryUri:
+    Condition: BuildUE4Stuff
+    Value: !GetAtt ContainerRepository.Outputs.RepositoryURI
+    Description: Continuous Integration server build of Unreal Engine 4.
+    Export:
+      Name: !Sub "${AWS::StackName}-Ue4FullRepoUri"
+  GitLfsLambdaFunctionBucketName:
+    Value: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketName
+    Description: Bucket Name of the Git Lfs function
+    Export:
+      Name: !Sub "${AWS::StackName}-GitLfsFunctionBucket"
+  GitLfsLambdaFunctionObjectName:
+    Value: !GetAtt GitLfsFunction.Outputs.GitLfsFunctionObjectName
+    Description: Bucket Object name of the Git Lfs function
+    Export:
+      Name: !Sub "${AWS::StackName}-GitLfsFunctionObject"
 Resources:
   ArtifactStores:
     Type: AWS::CloudFormation::Stack
-    Condition: NeedsRolesAndArtifacts
     Properties:
       TemplateURL: ../common/ops-storage.yml
+      
+  GitLfsFunction:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: bootstrap-estranged-lfs.yml
+      Parameters:
+        BuildArtifactBucketName: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketName
+        PackageArtifactBucketName: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketName
+        CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
+        CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
   
   ContainerRepository:
     Type: AWS::CloudFormation::Stack
+    Condition: BuildUE4Stuff
     Properties:
       TemplateURL: ../common/ops-ecr.yml
       Parameters:
@@ -52,7 +76,6 @@ Resources:
   
   PipelineRoles:
     Type: AWS::CloudFormation::Stack
-    Condition: NeedsRolesAndArtifacts
     Properties:
       TemplateURL: ../common/ops-iam.yml
       Parameters:
