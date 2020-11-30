@@ -131,4 +131,5 @@ Resources:
               Configuration:
                 BucketName: !Ref PackageArtifactBucketName
                 Extract: false
+                ObjectKey: 'Estranged.Lfs.Hosting.Lambda.zip'
               RunOrder: 1
