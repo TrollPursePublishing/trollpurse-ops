@@ -2,6 +2,16 @@
 
 CloudFormation Templates used by [Troll Purse](https://trollpurse.com). Hobby game development.
 
+## Why
+
+This project provides a low server management model (commonly known as "serverless") for managing Continuous Integration (CI) and Continuous Deployment (CD) for common source control management services, popular game engines, and well known storefronts for video games and game related products.
+
+The primary focus is Continuous Integration for Git stored game products. The reason this came about is due to the amount of storage needed for game projects and the high expense of LFS support for hosted git providers. It also avoids the time and money spent for small to mid-sized studios on managing self-hosted versions of the aforementioned git service providers. Ultimately, this project focuses on supporting CI/CD game projects with users only paying based on time and usage of resources, instead of high flat monthly or per seat costs. This is ideal for small teams that plan for only a few builds a week. It is also excellent for the hobbyist as they do not need to remember to shut down resources during a break, but still maintain the automation of deploying a project when necessary.
+
+This project also enables private storage of licensed products. The best example is UE4, our automation builds a CI pipeline for Unreal Engine 4 using the popular ue4-docker project. The container image is stored in a private ECR to maintain the UE4 EULA.
+
+>*Here is an example of the cost advantage in context of Git LFS* A GitHub storage plan for 50GB of LFS storage is $5/month. 50GB of storage (so long as your aggregate S3 storage is less than 50TB) in AWS S3 costs $1.15/month in US-EAST-2. Your first 1 GB of download is free OUT of AWS. A full-depth clone of a single branch containing up to 50 GB of LFS data will cost $4.41 locally or about $1 in CodeBuild. Ideally this really only happens if you are adding a new team member or local copy of the remote repository. These are extreme examples maxing out storage. All in all, the monthly costs greatly beat the data pack cost and the usage costs are negligible. The ideal project for this pipeline will primarily be a code first project with about 20GB of assets and a final build (for a PC Client) size of about 5 GB.
+
 ## Features
 
 This repository exposes features for the Continuous Integration pipeline for building games. Below is a list of supported features. Continuous Deployment will be coming soon.
@@ -88,6 +98,8 @@ aws cloudformation --no-paginate list-exports --query "Exports[*].{Name:Name,Lin
 
 The link to launch this phase is named `GlobalOps-GamePipelineMagicLink` if you used the default options.
 
+>*Unreal Engine 4* If you choose to support UE4 in this stage, your costs will go up for each build of UE4 you wish to store for CI. This will be in the range of about $3 - $6 a month for each engine version you build. Due to the build pipeline of the custom windows docker container. You will also incur a one time EC2 charge of about $2 - $9 to build the engine. This can be modified by forking this project and integrating a private docker repository for the following: `templates/ops-github-build-project.yml` and the repository referenced in `templates/bootstrap-ue4-container-build.yml`. You can further cut costs by building the docker image locally and pushing to ECR or a **private** docker repository.
+
 ### Phase Three - For Each New Project
 
 You can now get the magic links with the following script. You may also login to your instance of the AWS Console, go to CloudFormation within the region you deployed Phase One, open the sidebar, select Exports, and click on the magic links.
@@ -115,6 +127,10 @@ If you chose to run the Engine specific or Large Container builder templates fou
 ## Per Project Deployments
 
 There are currently two supported configurations for per project pipelines. These pipelines are specifically for continuous integration. This means it will pull the project when pushed to the specific build branch (default is `main`) from github (currently). The final output will be an S3 bucket with the client application. So we currently support build pipelines for single player games. However, you can easily fork this repository and start plopping in support for server fleets.
+
+>*Triggering a Build* By default, these builds will only be triggered under two conditions. These conditions are the repository is pushed to with a commit starting with "release" (case sensitive, do no include quotes) or a tag is pushed following [semantic versioning format](https://semver.org/).
+
+>*Buildspec Templates Available* Troll Purse provides buildspec templates by engine at https://github.com/TrollPursePublishing/trollpurse-ops-engine-buildspecs. Simply find the one for your desired engine and copy and paste the content to your own buildspec. The most important part is that it setups git lfs.
 
 ### Custom Engine
 

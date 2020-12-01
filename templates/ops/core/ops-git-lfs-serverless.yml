@@ -123,4 +123,8 @@ Resources:
                     - ''
                     - - !GetAtt StorageBucket.Arn
                       - '/*'
-      
+  SigningLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${SigningLambda}"
+      RetentionInDays: 7
