@@ -57,9 +57,13 @@ Resources:
             build:
               commands:
                 - dotnet build --configuration Release --no-restore
+            post_build:
+              commands:
+                - dotnet publish /p:GenerateRuntimeConfigurationFiles=true --no-restore --configuration Release
           artifacts:
             name: GitLfsFunctionOutput
-            files: ./hosting/Estranged.Lfs.Hosting.Lambda/bin/Release/netcoreapp3.1/*
+            files: ./hosting/Estranged.Lfs.Hosting.Lambda/bin/Release/netcoreapp3.1/publish/*
+            discard-paths: true
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
