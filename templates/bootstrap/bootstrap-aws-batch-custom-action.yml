@@ -1,0 +1,237 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Custom AWS CodePipeline action that enables On-Demand EC2 ECS containers for deployment actions
+Parameters:
+  Image:
+    Type: String
+    Description: Docker image to use for this custom batch job
+  CustomActionName:
+    Type: String
+    Description: The name of this custom action
+  CustomActionVersion:
+    Type: String
+    Description: Version of this custom action
+  EcsTaskRoleArn:
+    Type: String
+    Description: Role Arn for the Ecs task executor (the provisioner)
+  JobRoleArn:
+    Type: String
+    Description: Role Arn for job executions (the workers)
+  Commands:
+    Type: CommaDelimitedList
+    Description: Commands to execute in docker container such as "aws,--version"
+  Parameters:
+    Type: String
+    Description: Json configuration of parameters that are referenced in the command
+Resources:
+  BatchCustomActionJob:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: container
+      JobDefinitionName: !Sub "${CustomActionName}JobDefinition"
+      Parameters: !Ref Parameters
+      ContainerProperties:
+        Command: !Ref Commands
+        ExecutionRoleArn: !Ref EcsTaskRoleArn
+        Image: !Ref Image
+        JobRoleArn: !Ref JobRoleArn
+        LogConfiguration:
+          LogDriver: awslogs
+        Memory: 1024
+        Vcpus: 2
+      RetryStrategy:
+        Attempts: 2
+      Timeout:
+        AttemptDurationSeconds: 21600
+        
+  BeginApiHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Initiates a job in the job queue
+      CodeUri: ../../functions/batch-custom-action/begin-api
+      Handler: lambda.lambda_handler
+      Runtime: python3.7
+      Role: !GetAtt JobCompletionHandlerExecutionRole.Arn
+      MemorySize: 128
+      Timeout: 15
+
+  EndApiHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Puts results into CodePipeline dependent on batch job results
+      CodeUri: ../../functions/batch-custom-action/end-api
+      Handler: lambda.lambda_handler
+      Runtime: python3.7
+      Role: !GetAtt InstanceApiExecutionRole.Arn
+      MemorySize: 128
+      Timeout: 15
+      
+  PollApiHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Tracks batch job status
+      CodeUri: ../../functions/batch-custom-action/poll-api
+      Handler: lambda.poll_handler
+      Runtime: python3.7
+      Role: !GetAtt JobApiExecutionRole.Arn
+      MemorySize: 128
+      Timeout: 15
+          
+  BatchDeployStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub "${AWS::StackName}-Deploy-Flow"
+      DefinitionString: !Sub |-
+        {
+          "Comment": "An example of the Amazon States Language that runs an AWS Batch job and monitors the job until it completes.",
+          "StartAt": "Batch Job Flow",
+          "States": {
+            "Batch Job Flow: {
+              "Type": "Parallel",
+              "Branches": [
+                {
+                  "StartAt": "Begin Job",
+                  "States": {
+                    "Begin Job": {
+                      "Type": "Task",
+                      "Resource": "${BeginApiHandler.Arn}",
+                      "InputPath": "$.params.parameters",
+                      "ResultPath": "$.status.job.jobArn",
+                      "Parameters": {
+                        "parameters": "$.parameters"
+                      },
+                      "Next": "Wait"
+                    },
+                    "Wait": {
+                      "Type": "Wait",
+                      "Seconds": 30,
+                      "Next": "Poll Job"
+                    },
+                    "Poll Job": {
+                      "Type": "Task",
+                      "Resource": "${PollApiHandler.Arn}",
+                      "InputPath": "$.status.job.jobArn",
+                      "ResultPath": "$.status.job",
+                      "Parameters": {
+                        "parameters": "$.parameters"
+                      },
+                      "Next": "Deploy Started?"
+                    },
+                    "Deploy Started?": {
+                      "Type": "Choice",
+                      "Choices":
+                        {
+                          "Variable": "$.status.job.status",
+                          "StringEquals": "SUCCEEDED",
+                          "Next": "Success"
+                        },
+                        {
+                          "Variable": "$.status.job.status",
+                          "StringEquals": "FAILED",
+                          "Next": "Failed"
+                        }
+                      ],
+                      "Default": "Wait"
+                    },
+                    "Success": {
+                      "Type": "Pass",
+                      "End": true
+                    },
+                    "Failed": {
+                      "Type": "Fail",
+                      "Error": "DeployError",
+                      "Cause": "AWS Batch Job failed to succeed."
+                    }
+                  }
+                }
+              ],
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "ResultPath": "$.errorDetails",
+                  "Next": "End Job"
+                }
+              ],
+              "OutputPath": "$[0]",
+              "Next": "End Job"
+            },
+            "End Job": {
+              "Type": "Task",
+              "Resource": "${EndApiHandler.Arn}",
+              "End": true
+            }
+          }
+        }
+      RoleArn: !GetAtt Ec2BuilderStateMachineExecutionRole.Arn
+        
+  # CodePipeline Polling Function
+  CodePipelineListener:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - CodePipelineListenerLogGroup #DependsOn this because this can trigger before the log group is created
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-CodePipelineListener"
+      Description: Polls CodePipeline for Custom Actions.
+      CodeUri: ../../functions/batch-custom-action/poll-api
+      Handler: lambda.lambda_handler
+      Runtime: python3.7
+      Role: !GetAtt CodePipelinePollerExecutionRole.Arn
+      MemorySize: 128
+      Timeout: 15
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref BatchDeployStateMachine
+          CUSTOM_ACTION_PROVIDER_NAME: !Ref CustomActionName
+          CUSTOM_ACTION_PROVIDER_VERSION: !Ref CustomActionVersion
+          CUSTOM_ACTION_PROVIDER_CATEGORY: Deploy
+      Events:
+        CodePipelineActionStartedEvent:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source: 
+                - "aws.codepipeline"
+              detail-type: 
+                - "CodePipeline Action Execution State Change"
+              detail: 
+                state: 
+                  - STARTED
+                type:
+                  owner:
+                    - Custom
+                  provider:
+                    - !Ref CustomActionName
+                  version:
+                    - !Ref CustomActionVersion
+                  category:
+                    - Deploy
+        CodePipelineCustomActionStepFunctionEndedEvent:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - "aws.states"
+              detail-type:
+                - "Step Functions Execution Status Change"
+              detail:
+                status:
+                  - FAILED
+                  - SUCCEEDED
+                  - ABORTED
+                  - TIMED_OUT
+                stateMachineArn:
+                  - !Ref BatchDeployStateMachine

@@ -1,0 +1,40 @@
+Parameters:
+  ComputeServiceRoleArn:
+    Type: String
+    Description: Role Arn for the Computer Environment (where batches are executed)
+  EcsInstanceRoleArn:
+    Type: String
+    Description: Role Arn for the ECS Instance.
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: The subnets the jobs will be launched in, must have access to ECS
+Resources:
+  BatchComputeEnvironment:
+    Type: AWS::Batch::ComputeEnvironment
+    Properties:
+      Type: MANAGED
+      ComputeEnvironmentName: !Sub "${AWS::StackName}BatchComputeEnvironment"
+      ServiceRole: !Ref ComputeServiceRoleArn
+      State: ENABLED
+      ComputeResources:
+        AllocationStrategy: BEST_FIT_PROGRESSIVE
+        InstanceRole: !Ref EcsInstanceRoleArn
+        InstanceTypes:
+          - t3a.small
+          - t3a.medium
+          - t3a.large
+          - t3a.micro
+        MaxvCpus: 2
+        MinvCpus: 0
+        Subnets: !Ref Subnets
+        Type: EC2
+        
+  BatchComputeJobQueue:
+    Type: AWS::Batch::JobQueue
+    Properties:
+      JobQueueName: !Sub "${AWS::StackName}BatchComputeJobQueue"
+      Priority: 0
+      State: ENABLED
+      ComputeEnvironmentOrder:
+        - ComputeEnvironment: !Ref BatchComputeEnvironment
+          Order: 0

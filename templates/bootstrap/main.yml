@@ -28,11 +28,21 @@ Parameters:
     Type: Number
     Description: Version of the custom action provider.
     Default: 1
+  ItchIoDeploySupport:
+    Type: String
+    Description: Create resources needed to auto deploy to itch using butler and a CodePipeline custom action
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    ConstraintDescription: "Yes or No"
 Conditions:
   BuildUE4Stuff:
     !Equals [ !Ref BuildConfiguration, UnrealEngine4Support ]
   BuildWindowsContainerStuff:
     !Or [!Equals [ !Ref BuildConfiguration, MassiveContainerBuilder ], Condition: BuildUE4Stuff ]
+  BuildItchIoStuff:
+    !Equals [ !Ref ItchIoDeploySupport, "Yes" ]
 Outputs:
   Ue4FullDockerRepositoryUri:
     Condition: BuildUE4Stuff
@@ -40,6 +50,12 @@ Outputs:
     Description: Continuous Integration server build of Unreal Engine 4.
     Export:
       Name: !Sub "${AWS::StackName}-Ue4FullRepoUri"
+  ItchIoButlerDockerRepositoryUri:
+    Condition: BuildItchIoStuff
+    Value: !GetAtt ItchIoButlerContainerRepository.Outputs.RepositoryURI
+    Description: Continuous Deploy server build of itch.io butler cli
+    Export:
+      Name: !Sub "${AWS::StackName}-ItchIoButlerRepoUri"
   GitLfsLambdaFunctionBucketName:
     Value: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketName
     Description: Bucket Name of the Git Lfs function
@@ -74,6 +90,14 @@ Resources:
       TemplateURL: ../common/ops-ecr.yml
       Parameters:
         RepositoryName: ue4-full
+        
+  ItchIoButlerContainerRepository:
+    Type: AWS::CloudFormation::Stack
+    Condition: BuildItchIoStuff
+    Properties:
+      TemplateURL: ../common/ops-ecr.yml
+      Parameters:
+        RepositoryName: itchio-butler
   
   PipelineRoles:
     Type: AWS::CloudFormation::Stack
@@ -113,3 +137,14 @@ Resources:
         UE4GithubUsername: !Ref UE4GithubUsername
         UE4GithubPrivateAccessToken: !Ref UE4GithubPrivateAccessToken
         GithubAccessToken: !Ref GithubPrivateAccessToken
+  
+  ItchIoButlerBuildProject:
+    Type: AWS::CloudFormation::Stack
+    Condition: BuildItchIoStuff
+    Properties:
+      TemplateURL: bootstrap-docker-project.yml
+      Parameters:
+        CodeBuildContainerRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildContainerArn
+        OpsDockerRepositoryUri: !GetAtt ItchIoButlerContainerRepository.Outputs.RepositoryURI
+        OpsDockerfileProject: itchio-butler
+        OpsDockerfileProjectVersion: "1.0"

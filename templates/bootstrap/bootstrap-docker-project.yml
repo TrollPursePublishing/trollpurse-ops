@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Bootstrap template to create a build project for the itchio butler docker container.
+Parameters:
+  CodeBuildContainerRoleArn:
+    Type: String
+    Description: Arn for the codebuild role that enables Ecr publishing.
+  OpsDockerRepositoryUri:
+    Type: String
+    Description: Name of the Ecr Repository to publish docker image.
+  OpsDockerfileProject:
+    Description: The name of the directory under dockerfiles for the desired docker build
+    Type: String
+  OpsDockerfileProjectVersion:
+    Description: The major minor semantic version for this project tag
+    Type: String
+  GithubRepositoryName:
+    Description: GitHub repository name. For example, my-website
+    Type: String
+    Default: trollpurse-ops
+  GithubOrganization:
+    Type: String
+    Description: The owner of the repository. For an organization, it is the name of the organization
+    Default: TrollPursePublishing
+Resources:
+  DockerBuildProject:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      Name: !Sub "${AWS::StackName}-DockerProject"
+      ServiceRole: !Ref CodeBuildContainerRoleArn
+      Description: Build itch.io butler container image with aws cli support
+      BadgeEnabled: false
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Source:
+        Type: GITHUB
+        Auth:
+          Type: OAUTH
+        BuildSpec: "dockerfiles/buildspec.yml"
+        GitCloneDepth: 1
+        ReportBuildStatus: false
+        Location: !Sub "https://github.com/${GithubOrganization}/${GithubRepositoryName}.git"
+      SourceVersion: refs/heads/main
+      Triggers:
+        Webhook: false
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: "aws/codebuild/standard:4.0"
+        EnvironmentVariables:
+          - Value: !Ref OpsDockerRepositoryUri
+            Name: DOCKER_REPOSITORY
+          - Value: !Ref OpsDockerfileProject
+            Name: DOCKER_PROJECT
+          - Value: !Ref OpsDockerfileProjectVersion
+            Name: MAJOR_MINOR_VERSION
+
+  DockerBuildProjectLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/codebuild/${DockerBuildProject}"
+      RetentionInDays: 7
