@@ -32,7 +32,7 @@ Parameters:
     NoEcho: true
 Outputs:
   GitLfsFunctionObjectName:
-    Value: Estranged.Lfs.Hosting.Lambda.zip
+    Value: functions/Estranged.Lfs.Hosting.Lambda.zip
     Description: Name of the output artifact
 Resources:
   GitLfsBuildProject:
@@ -57,14 +57,9 @@ Resources:
             build:
               commands:
                 - dotnet build --configuration Release --no-restore
-            post_build:
-              commands:
-                - cp -R ./hosting/Estranged.Lfs.Hosting.Lambda/bin/Release/netcoreapp3.1 ./Estranged.Lfs.Hosting.Lambda
           artifacts:
             name: GitLfsFunctionOutput
-            files: '**/*'
-            discard-paths: no
-            base-directory: 'Estranged.Lfs.Hosting.Lambda'
+            files: ./hosting/Estranged.Lfs.Hosting.Lambda/bin/Release/netcoreapp3.1/*
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
@@ -131,5 +126,5 @@ Resources:
               Configuration:
                 BucketName: !Ref PackageArtifactBucketName
                 Extract: false
-                ObjectKey: 'Estranged.Lfs.Hosting.Lambda.zip'
+                ObjectKey: 'functions/Estranged.Lfs.Hosting.Lambda.zip'
               RunOrder: 1
