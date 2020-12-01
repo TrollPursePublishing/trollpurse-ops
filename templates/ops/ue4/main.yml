@@ -63,7 +63,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: BuildGitLfsServerless
     Properties:
-      TemplateURL: ../core/ops-build-project.yml
+      TemplateURL: ../core/ops-github-build-project.yml
       Parameters:
         BuildRoleArn: !GetAtt Roles.Outputs.CodeBuildRoleArn
         ClientDownloadBucketName: !GetAtt Storage.Outputs.ClientDownloadBucketName
@@ -83,7 +83,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: NoLfs
     Properties:
-      TemplateURL: ../core/ops-build-project.yml
+      TemplateURL: ../core/ops-github-build-project.yml
       Parameters:
         BuildRoleArn: !GetAtt Roles.Outputs.CodeBuildRoleArn
         ClientDownloadBucketName: !GetAtt Storage.Outputs.ClientDownloadBucketName
