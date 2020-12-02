@@ -130,7 +130,7 @@ There are currently two supported configurations for per project pipelines. Thes
 
 >*Triggering a Build* By default, these builds will only be triggered under two conditions. These conditions are the repository is pushed to with a commit starting with "release" (case sensitive, do no include quotes) or a tag is pushed following [semantic versioning format](https://semver.org/).
 
->*Buildspec Templates Available* Troll Purse provides buildspec templates by engine at https://github.com/TrollPursePublishing/trollpurse-ops-engine-buildspecs. Simply find the one for your desired engine and copy and paste the content to your own buildspec. The most important part is that it setups git lfs.
+>*Buildspec Templates Available* [Troll Purse provides buildspec examples by engine](https://github.com/TrollPursePublishing/trollpurse-ops-engine-buildspecs). Simply find the one for your desired engine and copy and paste the content to your own buildspec. The most important part is that it setups git lfs. There is no example for a custom engine. For a custom engine use [the buildspec reference for your platform](https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#build-spec-ref-syntax).
 
 ### Custom Engine
 
@@ -162,7 +162,7 @@ This project is built to be as cost effective as possible. It was also created t
 
 This project, for ease of integration, creates required IAM roles with the `/ops/` path. The project tries to restrict access and role passing to this path. Most of the stacks are created with IAM Role ARNs as parameters, which will enable those with experience to use the stacks with IAM Roles managed by AWS mature organizations. This current template structure will be followed, and we may provide `*-no-iam.yml` type stacks in the future.
 
-### The Large Docker Builder is in the default VPC
+### The Large Docker Builder and AWS Batch are in the default VPC
 
 The large docker container fork currently deploys EC2 instances into the default VPC. While it is a short lived service - several hours - this is not ideal. This EC2 instance should be deployed to a private subnet with a route table pointing to a NAT that points to an Internet Gateway. [See this documentation](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Scenario2.html). This strategy dramatically impacts the per month billing due to the NAT gateway charges which is why it was left out of the current iteration. Another option would be to build the network on demand, but this may impact build time for large windows containers if done from a cold start. It is a planned fix.
 
