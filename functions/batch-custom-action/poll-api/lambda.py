@@ -149,15 +149,13 @@ def get_job_flow_status(flow_id) -> JobFlowStatus:
 
 
 def start_job_flow(job_id, job):
-    # job model reference: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/codepipeline.html#CodePipeline.Client.get_job_details
     input_artifacts = get_job_attribute(job, 'inputArtifacts', [])
     input_artifact = get_first_artifact(input_artifacts)
-
     configuration = get_job_attribute(job, 'actionConfiguration', {}).get('configuration', {})
     job_queue = configuration.get('JobQueue')
     job_definition = configuration.get('JobDefinition')
     job_name = configuration.get('JobName')
-    command = configuration.get('Command')
+    job_parameters = configuration.get('Parameters')
     pipeline_context = get_job_attribute(job, 'pipelineContext', {})
     pipeline_execution_id = pipeline_context.get('pipelineExecutionId')
     pipeline_arn = pipeline_context.get('pipelineArn')
@@ -171,17 +169,15 @@ def start_job_flow(job_id, job):
                 "arn": pipeline_arn,
                 "name": pipeline_name
             },
-            "artifacts": {
-                "input": {
-                    "bucketName": input_artifact.get('bucketName'),
-                    "objectKey": input_artifact.get('objectKey')
-                }
+            "artifact": {
+                "bucketName": input_artifact.get('bucketName'),
+                "objectKey": input_artifact.get('objectKey')
             },
             "job": {
-                "jobQueue": job_queue,
-                "jobDefinition": job_definition,
-                "jobName": job_name,
-                "command": command
+                "queue": job_queue,
+                "definition": job_definition,
+                "name": job_name + "-" + uuid.uuid4().hex,
+                "parameters": json.loads(job_parameters)
             }
         }
     }

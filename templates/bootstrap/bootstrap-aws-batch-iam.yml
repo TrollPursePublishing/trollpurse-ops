@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Setup IAM roles for AWS Batch deploy workers
+Parameters:
+  ArtifactStoreArn:
+    Type: String
+    Description: Arn for the artifact store to download artifacts from code pipeline
+Outputs:
+  BatchServiceRoleArn:
+    Description: Batch service role
+    Value: !GetAtt BatchServiceRole.Arn
+  EcsTaskRoleArn:
+    Description: ECS Service role
+    Value: !GetAtt EcsTaskRole.Arn
+  Ec2InstanceEcsRoleArn:
+    Description: EC2 role for interacting with ECS
+    Value: !GetAtt Ec2InstanceEcsRole.Arn
+  JobRoleArn:
+    Description: Job role for the ECS Task
+    Value: !GetAtt JobRole.Arn
+Resources:
+  BatchServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - batch.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /ops/
+  
+  EcsTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /ops/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs.amazonaws.com
+            Action: 'sts:AssumeRole'
+            
+  Ec2InstanceEcsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /ops/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+  
+  JobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /ops/
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}ArtifactRead"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource:
+                  - !Sub "${ArtifactStoreArn}/*"
+        - PolicyName: !Sub "${AWS::StackName}ParameterRead"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                  - ssm:GetParameterHistory
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ops/*"

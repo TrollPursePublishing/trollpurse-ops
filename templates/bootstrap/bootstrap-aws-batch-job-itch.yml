@@ -1,0 +1,178 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Custom AWS CodePipeline action that enables On-Demand EC2 ECS containers for deployment actions
+Parameters:
+  Image:
+    Type: String
+    Description: Docker image to use for this custom batch job
+  EcsTaskRoleArn:
+    Type: String
+    Description: Role Arn for the Ecs task executor (the provisioner)
+  JobRoleArn:
+    Type: String
+    Description: Role Arn for job executions (the workers)
+  ExecutionRoleArn:
+    Type: String
+    Description: Arn for the entire lambda function execution pipeline
+  BatchDeployStateMachineArn:
+    Type: String
+    Description: Arn for the state machine that will manage and watch the custom action batch worker
+Resources:
+  ItchCustomDeployAction: 
+    Type: AWS::CodePipeline::CustomActionType
+    Properties: 
+      Category: Deploy
+      Provider: ItchIoButlerDeployTest
+      Version: "1"
+      ConfigurationProperties: 
+        - Name: DeployDirectory 
+          Description: Directory in archive that contains the deployable game binaries and data
+          Key: true 
+          Required: true
+          Secret: false
+          Queryable: false
+          Type: String
+        - Name: ItchUsername 
+          Description: Username of the user in itch.io that has access to push to the project
+          Key: true 
+          Required: true
+          Secret: false
+          Queryable: false
+          Type: String
+        - Name: PasswordParameterFullName 
+          Description: SSM Parameter Store path and name that contains the API Key for itch butler
+          Key: true 
+          Required: true
+          Secret: false
+          Queryable: false
+          Type: String
+        - Name: BuildVersion 
+          Description: Version of your game
+          Key: true 
+          Required: true
+          Secret: false
+          Queryable: false
+          Type: String
+        - Name: Channels 
+          Description: Channel string for target platforms
+          Key: true 
+          Required: true
+          Secret: false
+          Queryable: false
+          Type: String
+        - Name: Game 
+          Description: Name of the game on itch for the push command
+          Key: true 
+          Required: true
+          Secret: false
+          Queryable: false
+          Type: String
+      InputArtifactDetails: 
+        MaximumCount: 1
+        MinimumCount: 1
+      OutputArtifactDetails: 
+        MaximumCount: 0
+        MinimumCount: 0 
+      Settings: 
+        EntityUrlTemplate: !Sub "https://console.aws.amazon.com/batch/v2/home?region=${AWS::Region}#job-definition/detail/${BatchCustomActionJob}"
+        ExecutionUrlTemplate: !Sub "https://${AWS::Region}.console.aws.amazon.com/states/home#/executions/details/{ExternalExecutionId}"
+
+  BatchCustomActionJob:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: container
+      JobDefinitionName: ItchIoButlerDeployTest
+      ContainerProperties:
+        Command:
+          - 'push-game.sh'
+          - '-b'
+          - 'Ref::InputBucketName'
+          - '-o'
+          - 'Ref::InputObjectKey'
+          - '-d'
+          - 'Ref::DeployDirectory'
+          - '-u'
+          - 'Ref::ItchUsername'
+          - '-p'
+          - 'Ref::PasswordParameterFullName'
+          - '-v'
+          - 'Ref::BuildVersion'
+          - '-c'
+          - 'Ref::Channels'
+          - '-g'
+          - 'Ref::Game'
+        ExecutionRoleArn: !Ref EcsTaskRoleArn
+        JobRoleArn: !Ref JobRoleArn
+        Image: !Ref Image
+        LogConfiguration:
+          LogDriver: awslogs
+        Memory: 1024
+        Vcpus: 2
+      RetryStrategy:
+        Attempts: 2
+      Timeout:
+        AttemptDurationSeconds: 21600
+  
+  CodePipelineListenerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-CodePipelineListener"
+      RetentionInDays: 7
+  
+  # CodePipeline Polling Function
+  CodePipelineListener:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - CodePipelineListenerLogGroup #DependsOn this because this can trigger before the log group is created
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-CodePipelineListener"
+      Description: Polls CodePipeline for Custom Actions.
+      CodeUri: ../../functions/batch-custom-action/poll-api
+      Handler: lambda.lambda_handler
+      Runtime: python3.7
+      Role: !Ref ExecutionRoleArn
+      MemorySize: 128
+      Timeout: 15
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref BatchDeployStateMachineArn
+          CUSTOM_ACTION_PROVIDER_NAME: !Ref ItchCustomDeployAction
+          CUSTOM_ACTION_PROVIDER_VERSION: "1"
+          CUSTOM_ACTION_PROVIDER_CATEGORY: Deploy
+      Events:
+        CodePipelineActionStartedEvent:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source: 
+                - "aws.codepipeline"
+              detail-type: 
+                - "CodePipeline Action Execution State Change"
+              detail: 
+                state: 
+                  - STARTED
+                type:
+                  owner:
+                    - Custom
+                  provider:
+                    - !Ref ItchCustomDeployAction
+                  version:
+                    - "1"
+                  category:
+                    - Deploy
+        CodePipelineCustomActionStepFunctionEndedEvent:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - "aws.states"
+              detail-type:
+                - "Step Functions Execution Status Change"
+              detail:
+                status:
+                  - FAILED
+                  - SUCCEEDED
+                  - ABORTED
+                  - TIMED_OUT
+                stateMachineArn:
+                  - !Ref BatchDeployStateMachineArn

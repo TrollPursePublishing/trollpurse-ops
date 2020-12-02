@@ -1,3 +1,5 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Setup compute and job queue for aws batch job definitions
 Parameters:
   ComputeServiceRoleArn:
     Type: String
@@ -24,7 +26,7 @@ Resources:
           - t3a.medium
           - t3a.large
           - t3a.micro
-        MaxvCpus: 2
+        MaxvCpus: 4
         MinvCpus: 0
         Subnets: !Ref Subnets
         Type: EC2

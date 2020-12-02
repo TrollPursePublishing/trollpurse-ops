@@ -2,48 +2,17 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: 'AWS::Serverless-2016-10-31'
 Description: Custom AWS CodePipeline action that enables On-Demand EC2 ECS containers for deployment actions
 Parameters:
-  Image:
+  ExecutionRoleArn:
     Type: String
-    Description: Docker image to use for this custom batch job
-  CustomActionName:
+    Description: Arn for the entire lambda function execution pipeline
+  StateMachineRoleArn:
     Type: String
-    Description: The name of this custom action
-  CustomActionVersion:
-    Type: String
-    Description: Version of this custom action
-  EcsTaskRoleArn:
-    Type: String
-    Description: Role Arn for the Ecs task executor (the provisioner)
-  JobRoleArn:
-    Type: String
-    Description: Role Arn for job executions (the workers)
-  Commands:
-    Type: CommaDelimitedList
-    Description: Commands to execute in docker container such as "aws,--version"
-  Parameters:
-    Type: String
-    Description: Json configuration of parameters that are referenced in the command
+    Description: Arn for the lambda function state machine execution
+Outputs:
+  StateMachineArn:
+    Description: Arn for the state machine managing the custom action
+    Value: !Ref BatchDeployStateMachine
 Resources:
-  BatchCustomActionJob:
-    Type: AWS::Batch::JobDefinition
-    Properties:
-      Type: container
-      JobDefinitionName: !Sub "${CustomActionName}JobDefinition"
-      Parameters: !Ref Parameters
-      ContainerProperties:
-        Command: !Ref Commands
-        ExecutionRoleArn: !Ref EcsTaskRoleArn
-        Image: !Ref Image
-        JobRoleArn: !Ref JobRoleArn
-        LogConfiguration:
-          LogDriver: awslogs
-        Memory: 1024
-        Vcpus: 2
-      RetryStrategy:
-        Attempts: 2
-      Timeout:
-        AttemptDurationSeconds: 21600
-        
   BeginApiHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -51,7 +20,7 @@ Resources:
       CodeUri: ../../functions/batch-custom-action/begin-api
       Handler: lambda.lambda_handler
       Runtime: python3.7
-      Role: !GetAtt JobCompletionHandlerExecutionRole.Arn
+      Role: !Ref ExecutionRoleArn
       MemorySize: 128
       Timeout: 15
 
@@ -62,28 +31,46 @@ Resources:
       CodeUri: ../../functions/batch-custom-action/end-api
       Handler: lambda.lambda_handler
       Runtime: python3.7
-      Role: !GetAtt InstanceApiExecutionRole.Arn
+      Role: !Ref ExecutionRoleArn
       MemorySize: 128
       Timeout: 15
       
-  PollApiHandler:
+  StatusApiHandler:
     Type: AWS::Serverless::Function
     Properties:
       Description: Tracks batch job status
-      CodeUri: ../../functions/batch-custom-action/poll-api
-      Handler: lambda.poll_handler
+      CodeUri: ../../functions/batch-custom-action/status-api
+      Handler: lambda.lambda_handler
       Runtime: python3.7
-      Role: !GetAtt JobApiExecutionRole.Arn
+      Role: !Ref ExecutionRoleArn
       MemorySize: 128
       Timeout: 15
-          
+      
+  BeginApiHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${BeginApiHandler}"
+      RetentionInDays: 7
+
+  EndApiHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${EndApiHandler}"
+      RetentionInDays: 7
+
+  StatusApiHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub "/aws/lambda/${StatusApiHandler}"
+      RetentionInDays: 7
+
   BatchDeployStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       StateMachineName: !Sub "${AWS::StackName}-Deploy-Flow"
       DefinitionString: !Sub |-
         {
-          "Comment": "An example of the Amazon States Language that runs an AWS Batch job and monitors the job until it completes.",
+          "Comment": "Runs an AWS Batch job and monitors the job until it completes.",
           "StartAt": "Batch Job Flow",
           "States": {
             "Batch Job Flow: {
@@ -95,8 +82,8 @@ Resources:
                     "Begin Job": {
                       "Type": "Task",
                       "Resource": "${BeginApiHandler.Arn}",
-                      "InputPath": "$.params.parameters",
-                      "ResultPath": "$.status.job.jobArn",
+                      "InputPath": "$.params",
+                      "ResultPath": "$.status",
                       "Parameters": {
                         "parameters": "$.parameters"
                       },
@@ -105,13 +92,13 @@ Resources:
                     "Wait": {
                       "Type": "Wait",
                       "Seconds": 30,
-                      "Next": "Poll Job"
+                      "Next": "Stats Job"
                     },
-                    "Poll Job": {
+                    "Stats Job": {
                       "Type": "Task",
-                      "Resource": "${PollApiHandler.Arn}",
-                      "InputPath": "$.status.job.jobArn",
-                      "ResultPath": "$.status.job",
+                      "Resource": "${StatusApiHandler.Arn}",
+                      "InputPath": "$.activeJob",
+                      "ResultPath": "$.status",
                       "Parameters": {
                         "parameters": "$.parameters"
                       },
@@ -121,12 +108,12 @@ Resources:
                       "Type": "Choice",
                       "Choices":
                         {
-                          "Variable": "$.status.job.status",
+                          "Variable": "$.activeJob.state",
                           "StringEquals": "SUCCEEDED",
                           "Next": "Success"
                         },
                         {
-                          "Variable": "$.status.job.status",
+                          "Variable": "$.activeJob.state",
                           "StringEquals": "FAILED",
                           "Next": "Failed"
                         }
@@ -176,62 +163,4 @@ Resources:
             }
           }
         }
-      RoleArn: !GetAtt Ec2BuilderStateMachineExecutionRole.Arn
-        
-  # CodePipeline Polling Function
-  CodePipelineListener:
-    Type: AWS::Serverless::Function
-    DependsOn:
-      - CodePipelineListenerLogGroup #DependsOn this because this can trigger before the log group is created
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-CodePipelineListener"
-      Description: Polls CodePipeline for Custom Actions.
-      CodeUri: ../../functions/batch-custom-action/poll-api
-      Handler: lambda.lambda_handler
-      Runtime: python3.7
-      Role: !GetAtt CodePipelinePollerExecutionRole.Arn
-      MemorySize: 128
-      Timeout: 15
-      Environment:
-        Variables:
-          STATE_MACHINE_ARN: !Ref BatchDeployStateMachine
-          CUSTOM_ACTION_PROVIDER_NAME: !Ref CustomActionName
-          CUSTOM_ACTION_PROVIDER_VERSION: !Ref CustomActionVersion
-          CUSTOM_ACTION_PROVIDER_CATEGORY: Deploy
-      Events:
-        CodePipelineActionStartedEvent:
-          Type: CloudWatchEvent
-          Properties:
-            Pattern:
-              source: 
-                - "aws.codepipeline"
-              detail-type: 
-                - "CodePipeline Action Execution State Change"
-              detail: 
-                state: 
-                  - STARTED
-                type:
-                  owner:
-                    - Custom
-                  provider:
-                    - !Ref CustomActionName
-                  version:
-                    - !Ref CustomActionVersion
-                  category:
-                    - Deploy
-        CodePipelineCustomActionStepFunctionEndedEvent:
-          Type: CloudWatchEvent
-          Properties:
-            Pattern:
-              source:
-                - "aws.states"
-              detail-type:
-                - "Step Functions Execution Status Change"
-              detail:
-                status:
-                  - FAILED
-                  - SUCCEEDED
-                  - ABORTED
-                  - TIMED_OUT
-                stateMachineArn:
-                  - !Ref BatchDeployStateMachine
+      RoleArn: !Ref StateMachineRoleArn

@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Setup compute and job queue for aws batch job definitions
+Outputs:
+  ExecutionRoleArn:
+    Description: Role Arn for the custom action executable lambda functions used by the state machine
+    Value: !GetAtt ExecutionRole.Arn
+  StateMachineRoleArn:
+    Description: Role Arn for the custom action state machine
+    Value: !GetAtt BatchDeployStateMachineRole.Arn
+Resources:
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /ops/
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}PipelineListenerPolicy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codepipeline:PollForJobs
+                  - codepipeline:GetJobDetails
+                  - codepipeline:AcknowledgeJob
+                  - codepipeline:PutJobSuccessResult
+                  - codepipeline:PutJobFailureResult
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - states:DescribeExecution
+                  - states:StartExecution
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - batch:DescribeJobs
+                  - batch:SubmitJob
+                  - batch:TerminateJob
+                Resource: "*"
+  
+  BatchDeployStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /ops/
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"

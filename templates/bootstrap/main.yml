@@ -36,6 +36,9 @@ Parameters:
       - "No"
     Default: "Yes"
     ConstraintDescription: "Yes or No"
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: The subnets the jobs will be launched in, must have access to ECS
 Conditions:
   BuildUE4Stuff:
     !Equals [ !Ref BuildConfiguration, UnrealEngine4Support ]
@@ -43,6 +46,8 @@ Conditions:
     !Or [!Equals [ !Ref BuildConfiguration, MassiveContainerBuilder ], Condition: BuildUE4Stuff ]
   BuildItchIoStuff:
     !Equals [ !Ref ItchIoDeploySupport, "Yes" ]
+  BuildCustomDeploy:
+    !Equals [ !Ref ItchIoDeploySupport, "Yes" ] #Make OR on Conditions as more deployment worker options become available
 Outputs:
   Ue4FullDockerRepositoryUri:
     Condition: BuildUE4Stuff
@@ -71,7 +76,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ../common/ops-storage.yml
-      
+  
   GitLfsFunction:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -90,7 +95,7 @@ Resources:
       TemplateURL: ../common/ops-ecr.yml
       Parameters:
         RepositoryName: ue4-full
-        
+  
   ItchIoButlerContainerRepository:
     Type: AWS::CloudFormation::Stack
     Condition: BuildItchIoStuff
@@ -106,7 +111,7 @@ Resources:
       Parameters:
         ArtifactStoreBucketArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketArn
         ClientDownloadBucketArn: !GetAtt ArtifactStores.Outputs.ClientDownloadBucketArn
-      
+  
   MassiveContainerBuilder:
     Type: AWS::CloudFormation::Stack
     Condition: BuildWindowsContainerStuff
@@ -120,7 +125,7 @@ Resources:
         CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
         GithubAccessToken: !Ref GithubPrivateAccessToken
         BuilderCustomerActionName: !Ref CustomActionProviderName
-      
+  
   UE4ContainerPipeline:
     Type: AWS::CloudFormation::Stack
     DependsOn:
@@ -137,6 +142,39 @@ Resources:
         UE4GithubUsername: !Ref UE4GithubUsername
         UE4GithubPrivateAccessToken: !Ref UE4GithubPrivateAccessToken
         GithubAccessToken: !Ref GithubPrivateAccessToken
+        
+  CustomActionRoles:
+    Type: AWS::CloudFormation::Stack
+    Condition: BuildCustomDeploy
+    Properties:
+      TemplateURL: bootstrap-aws-batch-custom-action-iam.yml
+  
+  CustomActionBatchRoles:
+    Type: AWS::CloudFormation::Stack
+    Condition: BuildCustomDeploy
+    Properties:
+      TemplateURL: bootstrap-aws-batch-iam.yml
+      Parameters:
+        ArtifactStoreArn: !GetAtt ArtifactStores.Outputs.ArtifactStoreBucketArn
+  
+  CustomActionBatchCompute:
+    Type: AWS::CloudFormation::Stack
+    Condition: BuildCustomDeploy
+    Properties:
+      TemplateURL: bootstrap-aws-batch-compute.yml
+      Parameters:
+        ComputeServiceRoleArn: !GetAtt CustomActionBatchRoles.Outputs.BatchServiceRoleArn
+        EcsInstanceRoleArn: !GetAtt CustomActionBatchRoles.Outputs.Ec2InstanceEcsRoleArn
+        Subnets: !Ref Subnets
+  
+  CustomActionBatchStateMachine:
+    Type: AWS::CloudFormation::Stack
+    Condition: BuildCustomDeploy
+    Properties:
+      TemplateURL: bootstrap-aws-batch-custom-action.yml
+      Parameters:
+        ExecutionRoleArn: !GetAtt CustomActionRoles.Outputs.ExecutionRoleArn
+        StateMachineRoleArn: !GetAtt CustomActionRoles.Outputs.StateMachineRoleArn
   
   ItchIoButlerBuildProject:
     Type: AWS::CloudFormation::Stack
@@ -148,3 +186,15 @@ Resources:
         OpsDockerRepositoryUri: !GetAtt ItchIoButlerContainerRepository.Outputs.RepositoryURI
         OpsDockerfileProject: itchio-butler
         OpsDockerfileProjectVersion: "1.0"
+  
+  ItchIoBatchDeployJob:
+    Type: AWS::CloudFormation::Stack
+    Condition: BuildItchIoStuff
+    Properties:
+      TemplateURL: bootstrap-aws-batch-job-itch.yml
+      Parameters:
+        Image: !Sub "${ItchIoButlerContainerRepository.Outputs.RepositoryURI}:1.0.1"
+        EcsTaskRoleArn: !GetAtt CustomActionBatchRoles.Outputs.EcsTaskRoleArn
+        JobRoleArn: !GetAtt CustomActionBatchRoles.Outputs.JobRoleArn
+        ExecutionRoleArn: !GetAtt CustomActionRoles.Outputs.ExecutionRoleArn
+        BatchDeployStateMachineArn: !GetAtt CustomActionBatchStateMachine.Outputs.StateMachineArn
