@@ -1,7 +1,19 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Create a Pipeline to build and deploy a game client from Github.
+  Create a CI Build Project that outputs game binaries to S3 for distribution or other pipelines.
 Parameters:
+  ClientDownloadBucketName:
+    Type: String
+    Description: S3 bucket name where the game binary will be published
+
+  GitHubRepositoryName:
+    Type: String
+    Description: The name of the repository
+
+  GitHubOrganization:
+    Type: String
+    Description: The name of the organization or user
+
   ProjectEnvironmentType:
     Type: String
     Description: The type for the project configuration
@@ -22,7 +34,12 @@ Parameters:
       - BUILD_GENERAL1_LARGE
       - BUILD_GENERAL1_2XLARGE
     Default: BUILD_GENERAL1_MEDIUM
-      
+    
+  GitLfsUri:
+    Type: String
+    Description: Git LFS URI to download lfs content from. Leave empty to ignore
+    Default: ""
+
   ProjectEnvironmentImageName:
     Type: String
     Description: The image to use for the build
@@ -34,8 +51,8 @@ Parameters:
 
 Outputs:
   ProjectName:
-      Description: The name of the Build Project
-      Value: !Ref BuildProject
+    Description: The name of the Build Project
+    Value: !Ref BuildProject
 
 Resources:
   BuildProject:
@@ -44,16 +61,40 @@ Resources:
       Name: !Sub '${AWS::StackName}-Build'
       Description: !Sub 'Build project for ${AWS::StackName}.'
       ServiceRole: !Ref BuildRoleArn
+      BadgeEnabled: true
       Artifacts:
-        Type: CODEPIPELINE
+        Type: S3
+        Location: !Ref ClientDownloadBucketName
+        Packaging: ZIP
       Source:
-        Type: CODEPIPELINE
+        Type: GITHUB
+        Auth:
+          Type: OAUTH
+        GitCloneDepth: 1
+        ReportBuildStatus: false
+        Location: !Sub "https://github.com/${GitHubOrganization}/${GitHubRepositoryName}.git"
+      Triggers:
+        Webhook: true
+        FilterGroups:
+          -
+            - Type: EVENT
+              Pattern: PUSH
+            - Type: COMMIT_MESSAGE
+              Pattern: ^release
+          -
+            - Type: EVENT
+              Pattern: PUSH
+            - Type: HEAD_REF
+              Pattern: ^refs/tags/(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
       Environment:
         Type: !Ref ProjectEnvironmentType
         ComputeType: !Ref ProjectEnvironmentComputeType
         Image: !Ref ProjectEnvironmentImageName
         ImagePullCredentialsType: CODEBUILD
-      TimeoutInMinutes: 60
+        EnvironmentVariables:
+          - Value: !Ref GitLfsUri
+            Name: GIT_LFS_URI
+      TimeoutInMinutes: 120
 
   BuildProjectLogGroup:
     Type: AWS::Logs::LogGroup

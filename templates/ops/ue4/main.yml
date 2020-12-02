@@ -8,21 +8,11 @@ Parameters:
   GithubRepositoryName:
     Type: String
     Description: Name of the repository this lfs configuration.
-  GithubPersonalAccessToken:
-    Type: String
-    Description: Token needed to access repository.
-    NoEcho: true
-  GithubReleaseBranch:
-    Type: String
-    Description: Branch to build for releases
     Default: main
   BootstrapStackName:
     Type: String
     Description: The stack name containing the exported repo uri for the build image.
     Default: GamePipelinesBootstrap
-  NotificationEmailDistribution:
-    Type: String
-    Description: Email distribution to notify when builds have failed or succeeded
   CreateGitLfsServerless:
     Type: String
     AllowedValues:
@@ -38,6 +28,8 @@ Parameters:
 Conditions:
   BuildGitLfsServerless:
     !Equals [ !Ref CreateGitLfsServerless, Yes ]
+  NoLfs:
+    !Equals [ !Ref CreateGitLfsServerless, No ]
 Resources:
   GitLfsServerless:
     Type: AWS::CloudFormation::Stack
@@ -67,13 +59,18 @@ Resources:
         ArtifactStoreBucketArn: !GetAtt Storage.Outputs.ArtifactStoreBucketArn
         ClientDownloadBucketArn: !GetAtt Storage.Outputs.ClientDownloadBucketArn
 
-  BuildProject:
+  BuildProjectWithLfs:
     Type: AWS::CloudFormation::Stack
+    Condition: BuildGitLfsServerless
     Properties:
-      TemplateURL: ../core/ops-build-project.yml
+      TemplateURL: ../core/ops-github-build-project.yml
       Parameters:
         BuildRoleArn: !GetAtt Roles.Outputs.CodeBuildRoleArn
+        ClientDownloadBucketName: !GetAtt Storage.Outputs.ClientDownloadBucketName
         ProjectEnvironmentType: WINDOWS_SERVER_2019_CONTAINER
+        GitHubRepositoryName: !Ref GithubRepositoryName
+        GitHubOrganization: !Ref GithubOrganization
+        GitLfsUri: !GetAtt GitLfsServerless.Outputs.LfsEndpoint
         ProjectEnvironmentImageName:
           !Join
             - ''
@@ -82,21 +79,25 @@ Resources:
               - "/ue4-full:"
               - !Ref EngineVersion
               - "-ltsc2019"
-
-  Pipeline:
+  BuildProject:
     Type: AWS::CloudFormation::Stack
+    Condition: NoLfs
     Properties:
-      TemplateURL: ../core/ops-github-pipeline.yml
+      TemplateURL: ../core/ops-github-build-project.yml
       Parameters:
-        BranchName: !Ref GithubReleaseBranch
-        GithubRepositoryName: !Ref GithubRepositoryName
-        GithubOrganization: !Ref GithubOrganization
-        GitHubSecret: !Ref GithubPersonalAccessToken
-        NotificationEmailDistribution: !Ref NotificationEmailDistribution
-        BuildProject: !GetAtt BuildProject.Outputs.ProjectName
-        CodePipelineRoleArn: !GetAtt Roles.Outputs.CodePipelineServiceRoleArn
+        BuildRoleArn: !GetAtt Roles.Outputs.CodeBuildRoleArn
         ClientDownloadBucketName: !GetAtt Storage.Outputs.ClientDownloadBucketName
-        ArtifactStoreBucketName: !GetAtt Storage.Outputs.ArtifactStoreBucketName
+        ProjectEnvironmentType: WINDOWS_SERVER_2019_CONTAINER
+        GitHubRepositoryName: !Ref GithubRepositoryName
+        GitHubOrganization: !Ref GithubOrganization
+        ProjectEnvironmentImageName:
+          !Join
+            - ''
+            - - Fn::ImportValue:
+                  !Sub "${BootstrapStackName}-Ue4FullRepoUri"
+              - "/ue4-full:"
+              - !Ref EngineVersion
+              - "-ltsc2019"
 
 Outputs:
   LfsUri:
