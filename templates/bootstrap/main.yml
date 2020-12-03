@@ -87,6 +87,14 @@ Resources:
         CodePipelineRoleArn: !GetAtt PipelineRoles.Outputs.CodePipelineServiceRoleArn
         CodeBuildRoleArn: !GetAtt PipelineRoles.Outputs.CodeBuildRoleArn
         GithubAccessToken: !Ref GithubPrivateAccessToken
+   
+  # When we use GIT LFS with a custom domain, codebuild gets confused and thinks this is now GITHUB_ENTERPRISE instead of Git.
+  CodeBuildSourceCredential:
+    Type: 'AWS::CodeBuild::SourceCredential'
+    Properties:
+      Token: !Ref GithubPrivateAccessToken #TODO: Use secrets manager
+      ServerType: GITHUB_ENTERPRISE
+      AuthType: PERSONAL_ACCESS_TOKEN
   
   ContainerRepository:
     Type: AWS::CloudFormation::Stack

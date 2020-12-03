@@ -149,9 +149,12 @@ Resources:
                     - "ecr:InitiateLayerUpload"
                     - "ecr:UploadLayerPart"
                     - "ecr:CompleteLayerUpload"
-                    - "ecr:GetAuthorizationToken"
                   Resource:
                     - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ops/*"
+                - Effect: Allow
+                  Action:
+                    - ecr:GetAuthorizationToken
+                  Resource: '*'
           - PolicyName: !Sub "${AWS::StackName}ECRBuildLogs"
             PolicyDocument:
               Version: "2012-10-17"
@@ -185,9 +188,12 @@ Resources:
                     - "ecr:GetDownloadUrlForLayer"
                     - "ecr:BatchGetImage"
                     - "ecr:BatchCheckLayerAvailability"
-                    - "ecr:GetAuthorizationToken"
                   Resource:
                     - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ops/*"
+                - Effect: Allow
+                  Action:
+                    - ecr:GetAuthorizationToken
+                  Resource: '*'
           - PolicyName: !Sub "${AWS::StackName}BuildLogs"
             PolicyDocument:
               Version: "2012-10-17"

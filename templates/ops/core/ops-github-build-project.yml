@@ -13,7 +13,7 @@ Parameters:
   GitHubOrganization:
     Type: String
     Description: The name of the organization or user
-
+  
   ProjectEnvironmentType:
     Type: String
     Description: The type for the project configuration
