@@ -95,7 +95,7 @@ Resources:
             - ''
             - - Fn::ImportValue:
                   !Sub "${BootstrapStackName}-Ue4FullRepoUri"
-              - "/ue4-full:"
+              - ":"
               - !Ref EngineVersion
               - "-ltsc2019"
 
