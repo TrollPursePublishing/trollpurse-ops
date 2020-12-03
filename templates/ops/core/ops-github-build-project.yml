@@ -71,7 +71,9 @@ Resources:
         Auth:
           Type: OAUTH
         GitCloneDepth: 1
-        ReportBuildStatus: false
+        GitSubmodulesConfig:
+          FetchSubmodules: true
+        ReportBuildStatus: true
         Location: !Sub "https://github.com/${GitHubOrganization}/${GitHubRepositoryName}.git"
       Triggers:
         Webhook: true
