@@ -11,6 +11,15 @@ Parameters:
     Type: String
     Description: Needed to access repositories in CodePipeline, despite them being public.
     NoEcho: true
+  LfsGithubUsername:
+    Type: String
+    Description: Needed to access GitLFS, okay to leave blank if you do not plan on using the custom serverless GitLfs service
+    Default: "N/A"
+  LfsGithubPrivateAccessToken:
+    Type: String
+    Description: Needed to access GitLFS, okay to leave blank if you do not plan on using the custom serverless GitLfs service
+    NoEcho: true
+    Default: "N/A"
   UE4GithubUsername:
     Type: String
     Description: Only needed if UnrealEngine4Support is selected. The username that has access to EpicGames/UnrealEngine or forked repo on GitHub.
@@ -92,9 +101,10 @@ Resources:
   CodeBuildSourceCredential:
     Type: 'AWS::CodeBuild::SourceCredential'
     Properties:
-      Token: !Ref GithubPrivateAccessToken #TODO: Use secrets manager
+      Token: !Ref LfsGithubPrivateAccessToken #TODO: Use secrets manager
       ServerType: GITHUB_ENTERPRISE
       AuthType: PERSONAL_ACCESS_TOKEN
+      Username: !Ref LfsGithubUsername
   
   ContainerRepository:
     Type: AWS::CloudFormation::Stack
