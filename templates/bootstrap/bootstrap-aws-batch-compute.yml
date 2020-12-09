@@ -8,7 +8,7 @@ Parameters:
     Type: String
     Description: Role Arn for the ECS Instance.
   Subnets:
-    Type: List<AWS::EC2::Subnet::Id>
+    Type: CommaDelimitedList
     Description: The subnets the jobs will be launched in, must have access to ECS
 Resources:
   BatchComputeEnvironment:

@@ -183,7 +183,9 @@ Resources:
       Parameters:
         ComputeServiceRoleArn: !GetAtt CustomActionBatchRoles.Outputs.BatchServiceRoleArn
         EcsInstanceRoleArn: !GetAtt CustomActionBatchRoles.Outputs.Ec2InstanceEcsRoleArn
-        Subnets: !Ref Subnets
+        Subnets: !Join
+          - ','
+          - !Ref Subnets
   
   CustomActionBatchStateMachine:
     Type: AWS::CloudFormation::Stack

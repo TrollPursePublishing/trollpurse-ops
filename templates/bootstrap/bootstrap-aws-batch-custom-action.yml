@@ -83,10 +83,7 @@ Resources:
                       "Type": "Task",
                       "Resource": "${BeginApiHandler.Arn}",
                       "InputPath": "$.params",
-                      "ResultPath": "$.status",
-                      "Parameters": {
-                        "parameters": "$.parameters"
-                      },
+                      "ResultPath": "$.activeJob",
                       "Next": "Wait"
                     },
                     "Wait": {
@@ -98,22 +95,19 @@ Resources:
                       "Type": "Task",
                       "Resource": "${StatusApiHandler.Arn}",
                       "InputPath": "$.activeJob",
-                      "ResultPath": "$.status",
-                      "Parameters": {
-                        "parameters": "$.parameters"
-                      },
+                      "ResultPath": "$.activeJob.jobState",
                       "Next": "Deploy Started?"
                     },
                     "Deploy Started?": {
                       "Type": "Choice",
                       "Choices":
                         {
-                          "Variable": "$.activeJob.state",
+                          "Variable": "$.activeJob.jobState",
                           "StringEquals": "SUCCEEDED",
                           "Next": "Success"
                         },
                         {
-                          "Variable": "$.activeJob.state",
+                          "Variable": "$.activeJob.jobState",
                           "StringEquals": "FAILED",
                           "Next": "Failed"
                         }
@@ -159,6 +153,7 @@ Resources:
             "End Job": {
               "Type": "Task",
               "Resource": "${EndApiHandler.Arn}",
+              "InputPath": "$.activeJob",
               "End": true
             }
           }

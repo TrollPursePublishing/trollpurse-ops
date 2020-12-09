@@ -29,11 +29,9 @@ def lambda_handler(event, context):
       jobs=[ submit_response.get('jobId', '')]
     )
     
-    event['status'] = {
+    return {
         'jobArn': submit_response.get('jobArn', ''),
         'jobName': submit_response.get('jobName', ''),
         'jobId': submit_response.get('jobId', ''),
         'jobState': describe_response.get('jobs', [{}])[0].get('status', '')
     }
-    
-    return event
