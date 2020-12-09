@@ -22,15 +22,12 @@ Resources:
         AllocationStrategy: BEST_FIT_PROGRESSIVE
         InstanceRole: !Ref EcsInstanceRoleArn
         InstanceTypes:
-          - t3a.small
-          - t3a.medium
-          - t3a.large
-          - t3a.micro
-        MaxvCpus: 4
+          - c6g.medium
         MinvCpus: 0
+        MaxvCpus: 2
         Subnets: !Ref Subnets
         Type: EC2
-        
+
   BatchComputeJobQueue:
     Type: AWS::Batch::JobQueue
     Properties:

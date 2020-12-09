@@ -22,7 +22,7 @@ Resources:
     Type: AWS::CodePipeline::CustomActionType
     Properties: 
       Category: Deploy
-      Provider: ItchIoButlerDeployTest3
+      Provider: ItchIoButlerDeployTest4
       Version: "1"
       ConfigurationProperties: 
         - Name: DeployDirectory 
@@ -107,7 +107,7 @@ Resources:
         LogConfiguration:
           LogDriver: awslogs
         Memory: 1024
-        Vcpus: 2
+        Vcpus: 1
       RetryStrategy:
         Attempts: 2
       Timeout:
