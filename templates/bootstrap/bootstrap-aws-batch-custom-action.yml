@@ -100,7 +100,7 @@ Resources:
                     },
                     "Deploy Started?": {
                       "Type": "Choice",
-                      "Choices":
+                      "Choices": [
                         {
                           "Variable": "$.activeJob.jobState",
                           "StringEquals": "SUCCEEDED",
