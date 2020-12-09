@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
+Description: One time run project that builds the requested features to support game engine CI and CD pipelines.
 Parameters:
   BuildConfiguration:
     Type: String
