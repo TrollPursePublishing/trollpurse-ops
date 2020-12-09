@@ -73,7 +73,7 @@ Resources:
           "Comment": "Runs an AWS Batch job and monitors the job until it completes.",
           "StartAt": "Batch Job Flow",
           "States": {
-            "Batch Job Flow: {
+            "Batch Job Flow": {
               "Type": "Parallel",
               "Branches": [
                 {
