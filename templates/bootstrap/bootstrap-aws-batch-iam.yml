@@ -38,7 +38,7 @@ Resources:
     Properties:
       Path: /ops/
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -52,7 +52,7 @@ Resources:
     Properties:
       Path: /ops/
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
