@@ -26,7 +26,9 @@ Resources:
         AllocationStrategy: BEST_FIT_PROGRESSIVE
         InstanceRole: !Ref EcsInstanceRoleArn
         InstanceTypes:
-          - a1.medium
+          - m5a.large
+          - m5.large
+          - m4.large
         MinvCpus: 0
         MaxvCpus: 2
         DesiredvCpus: 0
