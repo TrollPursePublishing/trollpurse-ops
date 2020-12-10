@@ -22,7 +22,7 @@ Resources:
     Type: AWS::CodePipeline::CustomActionType
     Properties: 
       Category: Deploy
-      Provider: ItchIoButlerDeployTest9
+      Provider: ItchIoButlerDeployTests
       Version: "1"
       ConfigurationProperties: 
         - Name: DeployDirectory 
@@ -120,7 +120,7 @@ Resources:
       RetentionInDays: 7
   
   # CodePipeline Polling Function
-  CodePipelineListener:
+  PipelineListener:
     Type: AWS::Serverless::Function
     DependsOn:
       - CodePipelineListenerLogGroup #DependsOn this because this can trigger before the log group is created
@@ -140,7 +140,7 @@ Resources:
           CUSTOM_ACTION_PROVIDER_VERSION: "1"
           CUSTOM_ACTION_PROVIDER_CATEGORY: Deploy
       Events:
-        CodePipelineActionStartedEvent:
+        ActionStarted:
           Type: CloudWatchEvent
           Properties:
             Pattern:
@@ -160,7 +160,7 @@ Resources:
                     - "1"
                   category:
                     - Deploy
-        CodePipelineStepFunctionEndedEvent:
+        StepFunctionEnded:
           Type: CloudWatchEvent
           Properties:
             Pattern:
