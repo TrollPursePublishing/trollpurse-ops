@@ -84,7 +84,7 @@ Resources:
       JobDefinitionName: ItchIoButlerDeployTest
       ContainerProperties:
         Command:
-          - 'push-game.sh'
+          - '/usr/local/bin/push-game.sh'
           - '-b'
           - 'Ref::InputBucketName'
           - '-o'
@@ -155,7 +155,7 @@ Resources:
                   owner:
                     - Custom
                   provider:
-                    - !Ref ItchCustomDeployAction
+                    - ItchIoButlerDeployTests
                   version:
                     - "1"
                   category:

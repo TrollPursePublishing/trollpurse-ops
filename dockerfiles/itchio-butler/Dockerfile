@@ -10,7 +10,7 @@ COPY --from=installer /bin/butler /bin/butler
 COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
 COPY --from=installer /usr/local/bin/ /usr/local/bin/
 ENV PATH="$PATH:/bin/butler:/usr/local/aws-cli:/usr/local/bin"
-COPY ./push-game.sh .
-RUN yum install -y unzip && chmod +x push-game.sh
+COPY ./push-game.sh /usr/local/bin/push-game.sh
+RUN yum install -y unzip && chmod +x /usr/local/bin/push-game.sh
 
 CMD ["butler", "-V"]

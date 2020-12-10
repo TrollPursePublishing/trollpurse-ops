@@ -29,6 +29,7 @@ Resources:
           - a1.medium
         MinvCpus: 0
         MaxvCpus: 2
+        DesiredvCpus: 0
         Subnets: !Ref Subnets
         SecurityGroupIds: !Ref SecurityGroupIds
 
