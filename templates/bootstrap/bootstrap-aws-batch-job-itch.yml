@@ -22,7 +22,7 @@ Resources:
     Type: AWS::CodePipeline::CustomActionType
     Properties: 
       Category: Deploy
-      Provider: ItchIoButlerDeployTest7
+      Provider: ItchIoButlerDeployTest9
       Version: "1"
       ConfigurationProperties: 
         - Name: DeployDirectory 
@@ -160,7 +160,7 @@ Resources:
                     - "1"
                   category:
                     - Deploy
-        CodePipelineCustomActionStepFunctionEndedEvent:
+        CodePipelineStepFunctionEndedEvent:
           Type: CloudWatchEvent
           Properties:
             Pattern:
