@@ -22,7 +22,7 @@ Resources:
     Type: AWS::CodePipeline::CustomActionType
     Properties: 
       Category: Deploy
-      Provider: ItchIoButlerDeployTest4
+      Provider: ItchIoButlerDeployTest5
       Version: "1"
       ConfigurationProperties: 
         - Name: DeployDirectory 
