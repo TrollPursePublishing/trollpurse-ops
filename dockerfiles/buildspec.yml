@@ -2,7 +2,7 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query "{AccountId:Account}" --output text).dkr.ecr.$AWS_REGION.amazonaws.com
       - 'export IMAGE_TAG="$MAJOR_MINOR_VERSION.$CODEBUILD_BUILD_NUMBER"'
   build:
     commands:
