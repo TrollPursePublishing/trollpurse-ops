@@ -198,7 +198,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: BuildCustomDeploy
     Properties:
-      TemplateURL: bootstrap-aws-batch-custom-action.yml
+      TemplateURL: ../../package/bootstrap-aws-batch-custom-action.yml
       Parameters:
         ExecutionRoleArn: !GetAtt CustomActionRoles.Outputs.ExecutionRoleArn
         StateMachineRoleArn: !GetAtt CustomActionRoles.Outputs.StateMachineRoleArn
@@ -218,7 +218,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: BuildItchIoStuff
     Properties:
-      TemplateURL: bootstrap-aws-batch-job-itch.yml
+      TemplateURL: ../../package/bootstrap-aws-batch-job-itch.yml
       Parameters:
         Image: !Sub "${ItchIoButlerContainerRepository.Outputs.RepositoryURI}:1.0.1"
         EcsTaskRoleArn: !GetAtt CustomActionBatchRoles.Outputs.EcsTaskRoleArn

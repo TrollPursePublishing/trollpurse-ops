@@ -64,7 +64,6 @@ Resources:
   Ec2InstanceProfileArn:
     Type: AWS::IAM::InstanceProfile
     Properties: 
-      InstanceProfileName: String
       Path: /ops/
       Roles:
         - !Ref Ec2InstanceEcsRole
