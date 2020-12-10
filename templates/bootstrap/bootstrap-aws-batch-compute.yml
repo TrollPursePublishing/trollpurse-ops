@@ -9,7 +9,10 @@ Parameters:
     Description: Role Arn for the ECS Instance.
   Subnets:
     Type: CommaDelimitedList
-    Description: The subnets the jobs will be launched in, must have access to ECS
+    Description: The subnets the job compute engines will be launched in, must have access to ECS
+  SecurityGroupIds:
+    Type: CommaDelimitedList
+    Description: The security group ids the job compute engines will have applied.
 Resources:
   BatchComputeEnvironment:
     Type: AWS::Batch::ComputeEnvironment
@@ -19,14 +22,15 @@ Resources:
       ServiceRole: !Ref ComputeServiceRoleArn
       State: ENABLED
       ComputeResources:
+        Type: EC2
         AllocationStrategy: BEST_FIT_PROGRESSIVE
         InstanceRole: !Ref EcsInstanceRoleArn
         InstanceTypes:
-          - c6g.medium
+          - a1.medium
         MinvCpus: 0
         MaxvCpus: 2
         Subnets: !Ref Subnets
-        Type: EC2
+        SecurityGroupIds: !Ref SecurityGroupIds
 
   BatchComputeJobQueue:
     Type: AWS::Batch::JobQueue

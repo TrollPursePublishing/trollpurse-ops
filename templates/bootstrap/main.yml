@@ -46,9 +46,12 @@ Parameters:
       - "No"
     Default: "Yes"
     ConstraintDescription: "Yes or No"
-  Subnets:
+  BatchDeploySubnets:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: The subnets the jobs will be launched in, must have access to ECS
+    Description: The subnets the jobs will be launched in, must have access to ECS.
+  BatchDeploySecurityGroups:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: Security Groups for the launched batch services for deploy workers.
 Conditions:
   BuildUE4Stuff:
     !Equals [ !Ref BuildConfiguration, UnrealEngine4Support ]
@@ -186,7 +189,10 @@ Resources:
         EcsInstanceRoleArn: !GetAtt CustomActionBatchRoles.Outputs.Ec2InstanceEcsRoleArn
         Subnets: !Join
           - ','
-          - !Ref Subnets
+          - !Ref BatchDeploySubnets
+        SecurityGroupIds: !Join 
+          - ','
+          - !Ref BatchDeploySecurityGroups
   
   CustomActionBatchStateMachine:
     Type: AWS::CloudFormation::Stack
