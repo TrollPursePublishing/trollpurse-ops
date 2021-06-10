@@ -1,3 +1,11 @@
+# IMPORTANT UPDATE
+This project will soon undergo a major refactor in a seperate branch. The current commit state will be tagged v0.0.1 if you need to keep this state. The new changes will have the following:
+- Move AWS Batch processes for deployment to ECS Tasks
+- VPC and related networking with VPC Interface/Endpoint to S3 to reduce over the internet costs
+- Launch all the things capable to doing inside of this VPC
+- Clean up CloudFormation templates and make them smaller components without the "main" templates.
+- Use SecureStrings in Parameter Store for build process and uploading things like Itch.io and Github credentials.
+
 # trollpurse-ops
 
 CloudFormation Templates used by [Troll Purse](https://trollpurse.com). Hobby game development.
