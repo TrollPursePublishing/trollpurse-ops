@@ -46,8 +46,8 @@ This repository exposes features for the Continuous Integration pipeline for bui
   - [ ] BitBucket
   - [ ] CodeCommit
   - [ ] Helix Core
-- [ ] Distribute Client Packages
-  - [ ] Itch.io
+- [X] Distribute Client Packages
+  - [X] Itch.io
   - [ ] Steam
   - [ ] GameJolt
 - [ ] Distribute Server Packages
